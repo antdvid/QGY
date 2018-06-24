@@ -13,20 +13,19 @@ class QgyModel:
 
         self.n_per_year = 100
         self.rho_n_y1 = 0.6
-        self.psi_Tk_y1y2 = None
-        self.psi_Tk_y1 = None
-        self.G_Tk_y1 = None
-        self.G_Tk_y2 = None
-        self.phi_Tk_y1 = None
-        self.phi_Tk_n1 = np.ones(self.n) * 0.02
-        self.A_tk = None
 
-        #n+1 points to deal with n and n-1
+        # n+1 points to deal with recurrence from k to k-1,
+        # add a ghost point for T0 = 0
         self.I0_Tk = np.array([1, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.1, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18])
         self.Tk = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25, 30])
-        self.G_Tk_y1 = None #integration, additional zero for the first point
-        self.G_Tk_y2 = None #integration, additional zero for the first point
-        self.G_Tk_ny1 = None #integration, additional zero for the first point
+        self.G_Tk_y1 = None
+        self.G_Tk_y2 = None
+        self.G_Tk_ny1 = None
+        self.psi_Tk_y1y2 = None
+        self.psi_Tk_y1 = None
+        self.phi_Tk_y1 = None
+        self.phi_Tk_n1 = np.ones(self.n+1) * 0.02
+        self.A_tk = None
 
     def computeG_Tk_y(self):
         #integrate (sigma)^2 from 0 to t
@@ -39,45 +38,61 @@ class QgyModel:
         self.G_Tk_ny1 = np.concatenate([[0], np.cumsum(self.rho_n_y1 * sigma * (self.Tk[1:] - self.Tk[:-1]))])
 
     def computePsi_Tk_y1y2(self):
-        self.psi_Tk_y1y2 = self.v_Tk_y * np.sqrt(1 - self.rho_Tk_y * self.rho_Tk_y) / np.sqrt(self.G_Tk_y1[1:] * self.G_Tk_y2[1:])
+        self.psi_Tk_y1y2 = np.concatenate([[0], self.v_Tk_y * np.sqrt(1 - self.rho_Tk_y * self.rho_Tk_y) / np.sqrt(self.G_Tk_y1[1:] * self.G_Tk_y2[1:])])
 
     def computePsi_Tk_y1(self):
-        self.psi_Tk_y1 = -2 * np.abs(self.v_Tk_y) * self.rho_Tk_y/self.G_Tk_y1[1:]
+        self.psi_Tk_y1 = np.concatenate([[0], -2 * np.abs(self.v_Tk_y) * self.rho_Tk_y/self.G_Tk_y1[1:]])
+
 
     def computePhi_tk_y(self):
-        self.phi_Tk_y1 = self.Phi_G * np.sqrt(self.G_Tk_y1[1:])
+        self.phi_Tk_y1 = np.concatenate([[0], self
+                                        .Phi_G * np.sqrt(self.G_Tk_y1[1:])])
 
     def computeATk(self):
         #return is a vector on Tk
-        k = self.n
-        ans = np.empty(k)
-        #compute last term
-        G_0Tk = self.G_tT(0, k)
-        phi_Tk_n = np.array([self.phi_Tk_n1[-1], 0, 0])
-        psi_Tk_n = np.array([[0, 0, 0],[0, 0, 0], [0, 0, 0]])
-        E_0Tk = self.E_tT(phi_Tk_n, psi_Tk_n, G_0Tk)
+        n = self.Tk.size
+        if self.A_tk == None:
+            self.A_tk = np.empty(n)
 
-        H1 = np.array([self.phi_Tk_n1[-1], self.phi_Tk_y1[-1], 0])
-        H2 = np.array([[0, 0, 0],
-                       [0, self.psi_Tk_y1[-1], self.psi_Tk_y1y2[-1]],
-                       [0, self.psi_Tk_y1y2[-1], 0]])
-        for i in range(k, 0, -1):
-            #compute each term
-            M = self.M_tT(H2, i-1, i)
-            theta1 = M.dot(H1)
-            theta2 = M.dot(H2)
-            GTT = self.G_tT(i-1, i)
-            E_TT = self.E_tT(H1, H2, GTT)
+        A_sum = 0
+        for k in range(1, n):
+            phi_n = np.array([self.phi_Tk_n1[k], 0, 0])
+            psi_n = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+            G = self.G_tT(0, k)
+            M = self.M_tT(psi_n, G)
+            E_0Tk = self.E_tT(phi_n, M, G)
 
-            ans[i-1] = np.log(E_0Tk)/k - np.log(E_TT)
-            #iterate H
-            theta1[1] += self.psi_Tk_y1[i-1]
-            theta2[1][1] += self.psi_Tk_y1[i-1]
-            theta2[2][1] += self.psi_Tk_y1y2[i-1]
-            theta2[1][2] += self.psi_Tk_y1y2[i-1]
-            H1 = theta1
-            H2 = theta2
-        self.A_tk = ans
+            H0 = np.array([self.phi_Tk_n1[k], self.phi_Tk_y1[k], 0])
+            H1 = np.array([[0, 0, 0],[0, self.psi_Tk_y1[k], self.psi_Tk_y1y2[k]],[0, self.psi_Tk_y1y2[k], 0]])
+            E_prod = 1
+            for i in range(k, 0, -1):
+                G = self.G_tT(i-1, i)
+                M = self.M_tT(H1, G)
+                E_prod *= self.E_tT(H0, M, G)
+                #update H
+                phi_y = np.array([self.phi_Tk_n1[i-1], 0, 0])
+                psi_y = np.array([[0, 0, 0], [0, self.psi_Tk_y1[i-1], self.psi_Tk_y1y2[i-1]], [0, self.psi_Tk_y1y2[i-1], 0]])
+                H0 += M.dot(H0) + phi_y
+                H1 += M.dot(H1) + psi_y
+                print("k = ", k, "i = ", i)
+                print(E_prod)
+                print(H1)
+            self.A_tk[k] = np.log(E_0Tk / E_prod) - A_sum
+            A_sum += self.A_tk[k]
+
+    def E_tT(self, phi, M, G):
+        ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * np.dot(G.dot(M).dot(phi), phi))
+        return ans
+
+    def M_tT(self, psi, G):
+        return np.linalg.inv(np.eye(3,3) + psi.dot(G))
+
+    def G_tT(self, i, k):
+        G_tT_ny1 = self.G_Tk_ny1[k]-self.G_Tk_ny1[i]
+        G_t_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
+        return np.array([[self.Tk[k] - self.Tk[i], G_tT_ny1, 0],
+                        [G_tT_ny1, G_t_y1, 0],
+                        [0, 0, G_t_y1]])
 
     def computeYtkDtk(self):
         sigma1 = 0.2
@@ -88,9 +103,10 @@ class QgyModel:
         x_Tk_y1 = x_y1[::self.n_per_year]
         x_Tk_y2 = x_y2[::self.n_per_year]
 
-        self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_tk - (self.phi_Tk_y1
-                                                                    + 0.5 * self.psi_Tk_y1 * x_Tk_y1
-                                                                    + self.psi_Tk_y1y2 * x_Tk_y2) * x_Tk_y1)
+        print(self.A_tk)
+        self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_tk[1:] - (self.phi_Tk_y1[1:]
+                                                                    + 0.5 * self.psi_Tk_y1[1:] * x_Tk_y1
+                                                                    + self.psi_Tk_y1y2[1:] * x_Tk_y2) * x_Tk_y1)
 
     def doSimulation(self):
         #initialize, setup parameters
@@ -102,26 +118,11 @@ class QgyModel:
         self.computeATk()
 
         #start simulation
-        for i in range(5000):
+        num_iters = 1
+        for i in range(num_iters):
             self.computeYtkDtk()
             plt.plot(qgy.Tk[1:], qgy.Y_Tk)
         plt.show()
-
-    def E_tT(self, phi, psi, G):
-        M = np.linalg.inv(np.eye(3,3) + psi.dot(G))
-        ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * np.dot(G.dot(M).dot(phi), phi))
-        return ans
-
-    def M_tT(self, psi, i, k):
-        G = self.G_tT(i, k)
-        return np.linalg.inv(np.eye(3,3) + psi * G)
-
-    def G_tT(self, i, k):
-        G_tT_ny1 = self.G_Tk_ny1[k]-self.G_Tk_ny1[i]
-        G_t_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
-        return np.array([[self.Tk[k] - self.Tk[i], G_tT_ny1, 0],
-                        [G_tT_ny1, G_t_y1, 0],
-                        [0, 0, G_t_y1]])
 
     @staticmethod
     def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt):
