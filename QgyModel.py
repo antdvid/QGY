@@ -5,14 +5,15 @@ import matplotlib.pyplot as plt
 class QgyModel:
     def __init__(self):
         #preset parameters
-        self.R_Tk_y = -0.01 * np.array([0.85, 1.12, 0.15, 0.13, 0.19, 0.31, 0.39, 0.40, 0.55, 0.44, 0.39, 0.40, 0.54, 0.52, 0.47, 0.47, 0.28, 0.65])
-        self.Phi_G =   0.01 * np.array([0.66, 1.58, 2.35, 2.81, 3.05, 3.33, 3.48, 3.59, 3.62, 3.66, 3.68, 3.72, 3.72, 3.78, 3.80, 3.83, 4.05, 3.84])
-        self.v_Tk_y = -0.01 * np.array([13.68,22.53,6.77, 5.40, 6.46, 7.76, 8.25, 8.71, 11.97, 9.04, 9.24, 9.77,12.19,11.20,9.58,12.13, 6.45, 13.88])
-        self.rho_Tk_y = 0.01 *np.array([0.0,  9.9, 13.4, 53.7, 43.0, 57.8, 52.9, 58.8, 56.8, 58.3, 61.1, 62.8, 60.2, 61.4, 61.5, 60.9, 62.2, 59.7])
+        self.Sigma_Tk_y = 0.01 * np.array([1.80, 2.72, 3.39, 3.84, 4.16, 4.43, 4.57, 4.48, 4.64, 4.66, 4.63, 4.61, 4.61, 4.60, 4.58, 4.58, 4.54, 4.51, 4.43, 4.38, 4.46, 4.47, 4.47, 4.46, 4.45, 4.60, 4.56, 4.56, 4.57, 4.60])
+        self.sinV_Tk_y = -0.01 * np.array([64.9, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0])
+        self.sinRho_Tk_y = -0.01 * np.array([11.7, 15.4, 21.3, 25.5, 32.9, 36.2, 39.5, 41.1, 47.0, 49.7, 53.1, 55.2, 57.7, 59.6, 61.9, 64.7, 65.4, 65.7, 65.0, 64.9, 62.6, 62.2, 62.6, 63.2, 63.6, 68.7, 69.0, 69.6, 70.5, 74.0])
+        self.K_Tk_y = np.sqrt(np.square(self.sinV_Tk_y * self.sinRho_Tk_y) + 1)
+        self.R_Tk_y = 0.01 * np.array([0.00, 59.2, 76.7, 89.5, 97.8, 104.4, 109.2, 112.2, 114.7, 116.7, 117.9, 119.1, 119.7, 120.5, 121.0, 121.0, 121.4, 121.5, 121.7, 121.8, 121.6, 121.8, 121.9, 122.1, 122.3, 122.6, 123.0, 123.4, 123.8, 124.2])
         self.n = self.R_Tk_y.size
 
         self.n_per_year = 100
-        self.rho_n_y1 = 0.6
+        self.rho_n_y1 = -0.1
         self.psi_Tk_y1y2 = None
         self.psi_Tk_y1 = None
         self.G_Tk_y1 = None
@@ -22,66 +23,73 @@ class QgyModel:
         self.A_tk = None
 
         #n+1 points to deal with n and n-1
-        self.I0_Tk = np.array([1, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.1, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18])
-        self.Tk = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25, 30])
-        self.G_Tk_y1 = None #integration, additional zero for the first point
-        self.G_Tk_y2 = None #integration, additional zero for the first point
-        self.G_Tk_ny1 = None #integration, additional zero for the first point
+        self.I0_Tk = np.array([1, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.1, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.21, 1.22, 1.23, 1.24, 1.25, 1.26, 1.27, 1.28, 1.29, 1.30])
+        self.Tk = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
+        self.G_Tk_y1 = None  # integration, additional zero for the first point
+        self.G_Tk_y2 = None  # integration, additional zero for the first point
+        self.G_Tk_ny1 = None  # integration, additional zero for the first point
 
     def computeG_Tk_y(self):
         #integrate (sigma)^2 from 0 to t
         sigma = np.exp(self.R_Tk_y * self.Tk[1:])
-        self.G_Tk_y1 = self.G_Tk_y2 = np.concatenate([[0], np.cumsum(sigma * sigma * (self.Tk[1:] - self.Tk[0:-1]))])
+        self.G_Tk_y1 = self.G_Tk_y2 = np.concatenate([[0], np.cumsum(sigma * sigma * np.diff(self.Tk))])
 
     def computeG_Tk_ny(self):
         #integrate (sigma)^2 from 0 to t
         sigma = np.exp(self.R_Tk_y * self.Tk[1:])
-        self.G_Tk_ny1 = np.concatenate([[0], np.cumsum(self.rho_n_y1 * sigma * (self.Tk[1:] - self.Tk[:-1]))])
+        self.G_Tk_ny1 = np.concatenate([[0], np.cumsum(self.rho_n_y1 * sigma * np.diff(self.Tk))])
 
     def computePsi_Tk_y1y2(self):
-        self.psi_Tk_y1y2 = self.v_Tk_y * np.sqrt(1 - self.rho_Tk_y * self.rho_Tk_y) / np.sqrt(self.G_Tk_y1[1:] * self.G_Tk_y2[1:])
+        cosRho_Tk_y = np.sqrt(1 - np.square(self.sinRho_Tk_y))
+        psi_tilde =  - self.Sigma_Tk_y/ self.K_Tk_y * self.sinV_Tk_y * cosRho_Tk_y
+        self.psi_Tk_y1y2 = - psi_tilde / np.sqrt(self.G_Tk_y1[1:] * self.G_Tk_y2[1:])
 
     def computePsi_Tk_y1(self):
-        self.psi_Tk_y1 = -2 * np.abs(self.v_Tk_y) * self.rho_Tk_y/self.G_Tk_y1[1:]
+        psi_tilde = self.Sigma_Tk_y/self.K_Tk_y * self.sinV_Tk_y * self.sinRho_Tk_y
+        self.psi_Tk_y1 = -2 * psi_tilde / self.G_Tk_y1[1:]
 
     def computePhi_tk_y(self):
-        self.phi_Tk_y1 = self.Phi_G * np.sqrt(self.G_Tk_y1[1:])
+        cosV_Tk_y = np.sqrt(1 - np.square(self.sinV_Tk_y))
+        phi_tilde = self.Sigma_Tk_y/self.K_Tk_y * cosV_Tk_y
+        self.phi_Tk_y1 = -phi_tilde/np.sqrt(self.G_Tk_y1[1:])
 
     def computeATk(self):
-        #return is a vector on Tk
-        k = self.n
-        ans = np.empty(k)
-        #compute last term
-        G_0Tk = self.G_tT(0, k)
-        phi_Tk_n = np.array([self.phi_Tk_n1[-1], 0, 0])
-        psi_Tk_n = np.array([[0, 0, 0],[0, 0, 0], [0, 0, 0]])
-        E_0Tk = self.E_tT(phi_Tk_n, psi_Tk_n, G_0Tk)
+        n = self.Tk.size
+        if self.A_tk is None:
+            self.A_tk = np.empty(n-1)
 
-        H1 = np.array([self.phi_Tk_n1[-1], self.phi_Tk_y1[-1], 0])
-        H2 = np.array([[0, 0, 0],
-                       [0, self.psi_Tk_y1[-1], self.psi_Tk_y1y2[-1]],
-                       [0, self.psi_Tk_y1y2[-1], 0]])
-        for i in range(k, 0, -1):
-            #compute each term
-            M = self.M_tT(H2, i-1, i)
-            theta1 = M.dot(H1)
-            theta2 = M.dot(H2)
-            GTT = self.G_tT(i-1, i)
-            E_TT = self.E_tT(H1, H2, GTT)
+        A_sum = 0
+        for k in range(1, n):
+            phi_n = np.array([self.phi_Tk_n1[k-1], 0, 0])
+            psi_n = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+            G = self.G_tT(0, k)
+            M = self.M_tT(psi_n, G)
+            E_0Tk = self.E_tT(phi_n, M, G)
 
-            ans[i-1] = np.log(E_0Tk)/k - np.log(E_TT)
-            #iterate H
-            theta1[1] += self.psi_Tk_y1[i-1]
-            theta2[1][1] += self.psi_Tk_y1[i-1]
-            theta2[2][1] += self.psi_Tk_y1y2[i-1]
-            theta2[1][2] += self.psi_Tk_y1y2[i-1]
-            H1 = theta1
-            H2 = theta2
-        self.A_tk = ans
+            H0 = np.array([self.phi_Tk_n1[k-1], self.phi_Tk_y1[k-1], 0])
+            H1 = np.array([[0, 0, 0],[0, self.psi_Tk_y1[k-1], self.psi_Tk_y1y2[k-1]],[0, self.psi_Tk_y1y2[k-1], 0]])
+            E_prod = 1
+            for i in range(k, 0, -1):
+                print('')
+                print("k = ", k, "i = ", i)
+                G = self.G_tT(i-1, i)
+                M = self.M_tT(H1, G)
+                E_prod *= self.E_tT(H0, M, G)
+                #update H
+                phi_y = np.array([self.phi_Tk_n1[i-1], 0, 0])
+                psi_y = np.array([[0, 0, 0], [0, self.psi_Tk_y1[i-1], self.psi_Tk_y1y2[i-1]], [0, self.psi_Tk_y1y2[i-1], 0]])
+                H0 += M.dot(H0) + phi_y
+                H1 += M.dot(H1) + psi_y
+                print("E_prod = ", E_prod)
+                print("H1 = ", H1)
+            self.A_tk[k-1] = np.log(E_0Tk / E_prod) - A_sum
+            A_sum += self.A_tk[k-1]
 
     def computeYtkDtk(self):
-        sigma1 = 0.2
-        sigma2 = 0.2
+        sigma1 = np.exp(self.R_Tk_y * self.Tk[1:])
+        sigma1 = np.repeat(sigma1, self.n_per_year)
+        sigma2 = sigma1
+
         [x_n, x_y1] = self.generate_two_correlated_gauss(sigma1, sigma2, self.rho_n_y1, self.n * self.n_per_year, 1/self.n_per_year)
         x_y2 = self.generate_one_gauss(sigma2, self.n * self.n_per_year, 1/self.n_per_year)
 
@@ -101,27 +109,38 @@ class QgyModel:
         self.computePsi_Tk_y1y2()
         self.computeATk()
 
+        self.print_debug()
         #start simulation
-        for i in range(5000):
+        for i in range(1):
             self.computeYtkDtk()
             plt.plot(qgy.Tk[1:], qgy.Y_Tk)
         plt.show()
 
-    def E_tT(self, phi, psi, G):
-        M = np.linalg.inv(np.eye(3,3) + psi.dot(G))
+    def E_tT(self, phi, M, G):
         ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * np.dot(G.dot(M).dot(phi), phi))
+        print("M = ", M)
+        print("G = ", G)
+        print("phi = ", phi)
+        print("E = ", ans)
         return ans
 
-    def M_tT(self, psi, i, k):
-        G = self.G_tT(i, k)
+    def M_tT(self, psi, G):
         return np.linalg.inv(np.eye(3,3) + psi * G)
 
     def G_tT(self, i, k):
         G_tT_ny1 = self.G_Tk_ny1[k]-self.G_Tk_ny1[i]
-        G_t_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
+        G_tT_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
         return np.array([[self.Tk[k] - self.Tk[i], G_tT_ny1, 0],
-                        [G_tT_ny1, G_t_y1, 0],
-                        [0, 0, G_t_y1]])
+                        [G_tT_ny1, G_tT_y1, 0],
+                        [0, 0, G_tT_y1]])
+
+    def print_debug(self):
+        print("phi_tk_y1 = ", self.phi_Tk_y1)
+        print("psi_tk_y1_y2 = ", self.psi_Tk_y1y2)
+        print("psi_tk_y1 = ", self.psi_Tk_y1)
+        print("A_Tk = ", self.A_tk)
+        print("G_t_ny1 = ", self.G_Tk_ny1)
+        print("G_t_y1 = ", self.G_Tk_y1)
 
     @staticmethod
     def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt):
