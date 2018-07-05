@@ -67,27 +67,24 @@ class QgyModel:
             E_0Tk = self.E_tT(phi_n, M, G)
 
             H0 = np.array([self.phi_Tk_n1[k-1], self.phi_Tk_y1[k-1], 0])
-            H1 = np.array([[0, 0, 0],[0, self.psi_Tk_y1[k-1], self.psi_Tk_y1y2[k-1]],[0, self.psi_Tk_y1y2[k-1], 0]])
+            H1 = np.array([[0, 0, 0],[0, self.psi_Tk_y1[k-1], self.psi_Tk_y1y2[k-1]], [0, self.psi_Tk_y1y2[k-1], 0]])
             E_prod = 1
             for i in range(k, 0, -1):
-                print('')
-                print("k = ", k, "i = ", i)
-                G = self.G_tT(i-1, i)
-                M = self.M_tT(H1, G)
-                E_prod *= self.E_tT(H0, M, G)
-                #update H
-                phi_y = np.array([self.phi_Tk_n1[i-1], 0, 0])
-                psi_y = np.array([[0, 0, 0], [0, self.psi_Tk_y1[i-1], self.psi_Tk_y1y2[i-1]], [0, self.psi_Tk_y1y2[i-1], 0]])
-                H0 += M.dot(H0) + phi_y
-                H1 += M.dot(H1) + psi_y
-                print("E_prod = ", E_prod)
-                print("H1 = ", H1)
+                G = self.G_tT(i - 1, i)
+                M = np.linalg.inv(np.eye(3) + H1.dot(G))
+                Theta0 = M.dot(H0)
+                Theta1 = M.dot(H1)
+                H0 = Theta0 + np.array([self.phi_Tk_n1[i - 1], self.phi_Tk_y1[i - 1], 0])
+                H1 = Theta1 + np.array([[0, 0, 0], [0, self.psi_Tk_y1[i - 1], self.psi_Tk_y1y2[i - 1]],
+                                        [0, self.psi_Tk_y1y2[i - 1], 0]])
+                E_prod *= np.sqrt(np.linalg.det(M)) * np.exp(0.5 * H0.dot(G.dot(M.dot(H0))))
+
             self.A_tk[k-1] = np.log(E_0Tk / E_prod) - A_sum
             A_sum += self.A_tk[k-1]
 
     def computeYtkDtk(self):
-        sigma1 = np.exp(self.R_Tk_y * self.Tk[1:])
-        sigma1 = np.repeat(sigma1, self.n_per_year)
+        sigma1 = 0.1
+        sigma1 = np.repeat(sigma1, self.n_per_year * self.n)
         sigma2 = sigma1
 
         [x_n, x_y1] = self.generate_two_correlated_gauss(sigma1, sigma2, self.rho_n_y1, self.n * self.n_per_year, 1/self.n_per_year)
@@ -99,8 +96,14 @@ class QgyModel:
         self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_tk - (self.phi_Tk_y1
                                                                     + 0.5 * self.psi_Tk_y1 * x_Tk_y1
                                                                     + self.psi_Tk_y1y2 * x_Tk_y2) * x_Tk_y1)
+        self.t = np.linspace(0, self.Tk[-1], self.n * self.n_per_year)
+        r = 0.02
+        P0t = np.exp(-r * self.t)
+        phi_t_n1 = np.repeat(self.phi_Tk_n1, self.n_per_year)
+        G_t_n = self.t
+        self.D_t = P0t * np.exp(-phi_t_n1 * x_n - 0.5 * np.square(phi_t_n1) * G_t_n)
 
-    def doSimulation(self):
+    def initialize(self):
         #initialize, setup parameters
         self.computeG_Tk_ny()
         self.computeG_Tk_y()
@@ -110,18 +113,22 @@ class QgyModel:
         self.computeATk()
 
         self.print_debug()
+
+    def doSimulation(self):
+        self.initialize()
+
+
         #start simulation
-        for i in range(1):
+        for i in range(5000):
             self.computeYtkDtk()
-            plt.plot(qgy.Tk[1:], qgy.Y_Tk)
+            plt.subplot(1,2,1)
+            plt.plot(self.Tk[1:], self.Y_Tk)
+            plt.subplot(1,2,2)
+            plt.plot(self.t, self.D_t)
         plt.show()
 
     def E_tT(self, phi, M, G):
         ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * np.dot(G.dot(M).dot(phi), phi))
-        print("M = ", M)
-        print("G = ", G)
-        print("phi = ", phi)
-        print("E = ", ans)
         return ans
 
     def M_tT(self, psi, G):
