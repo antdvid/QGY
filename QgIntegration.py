@@ -221,8 +221,8 @@ if __name__ == "__main__":
     # test 3
     print('test 3: compute integration on theta')
     res = np.array(qg_int.compute_gauss_integration_on_intervals())/(2*np.pi)
-    exact = [5.58102721790474e-7, 0.0010331521066328, 0.221255431926692, 0.0129326423061761, 0.232158529261464,
-    5.58102721790474e-7, 0.00103315210663273, 0.221255431926692, 0.0129724020239904, 0.263981873139802]
+    exact = np.array([5.58102721790474e-7, 0.0010331521066328, 0.221255431926692, 0.0129326423061761, 0.232158529261464,
+    5.58102721790474e-7, 0.00103315210663273, 0.221255431926692, 0.0129724020239904, 0.263981873139802])/(2 * np.pi)
     err = np.linalg.norm(res - exact, 1)
     print("error = ", err)
     print("integration = ", qg_int.compute_gaussian_integration())

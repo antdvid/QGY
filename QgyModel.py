@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import norm
-import scipy.interpolate.interp1d as intrp
+import scipy as sp
 import matplotlib.pyplot as plt
 
 class QgyModel:
@@ -17,11 +17,9 @@ class QgyModel:
         self.rho_n_y1 = -0.1
         self.psi_Tk_y1y2 = None
         self.psi_Tk_y1 = None
-        self.G_Tk_y1 = None
-        self.G_Tk_y2 = None
         self.phi_Tk_y1 = None
         self.phi_Tk_n1 = np.ones(self.n) * 0.02
-        self.A_tk = None
+        self.A_Tk = None
 
         #n+1 points to deal with n and n-1
         self.I0_Tk = np.array([1, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.1, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.21, 1.22, 1.23, 1.24, 1.25, 1.26, 1.27, 1.28, 1.29, 1.30])
@@ -29,6 +27,8 @@ class QgyModel:
         self.G_Tk_y1 = None  # integration, additional zero for the first point
         self.G_Tk_y2 = None  # integration, additional zero for the first point
         self.G_Tk_ny1 = None  # integration, additional zero for the first point
+
+        self.initialize()
 
     def computeG_Tk_y(self):
         #integrate (sigma)^2 from 0 to t
@@ -71,8 +71,8 @@ class QgyModel:
 
     def computeATk(self):
         n = self.Tk.size
-        if self.A_tk is None:
-            self.A_tk = np.empty(n-1)
+        if self.A_Tk is None:
+            self.A_Tk = np.empty(n - 1)
 
         A_sum = 0
         for k in range(1, n):
@@ -95,8 +95,8 @@ class QgyModel:
                                         [0, self.psi_Tk_y1y2[i - 1], 0]])
                 E_prod *= np.sqrt(np.linalg.det(M)) * np.exp(0.5 * H0.dot(G.dot(M.dot(H0))))
 
-            self.A_tk[k-1] = np.log(E_0Tk / E_prod) - A_sum
-            A_sum += self.A_tk[k-1]
+            self.A_Tk[k - 1] = np.log(E_0Tk / E_prod) - A_sum
+            A_sum += self.A_Tk[k - 1]
 
     def computeYtkDtk(self):
         sigma1 = 0.1
@@ -109,9 +109,9 @@ class QgyModel:
         x_Tk_y1 = x_y1[::self.n_per_year]
         x_Tk_y2 = x_y2[::self.n_per_year]
 
-        self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_tk - (self.phi_Tk_y1
-                                                                    + 0.5 * self.psi_Tk_y1 * x_Tk_y1
-                                                                    + self.psi_Tk_y1y2 * x_Tk_y2) * x_Tk_y1)
+        self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_Tk - (self.phi_Tk_y1
+                                                                          + 0.5 * self.psi_Tk_y1 * x_Tk_y1
+                                                                          + self.psi_Tk_y1y2 * x_Tk_y2) * x_Tk_y1)
         self.t = np.linspace(0, self.Tk[-1], self.n * self.n_per_year)
         r = 0.02
         P0t = np.exp(-r * self.t)
@@ -131,10 +131,10 @@ class QgyModel:
         self.print_debug()
 
     def generate_interpolation(self):
-        self.psi_Tk_y1y2_intrp = intrp(self.Tk[1:], self.psi_Tk_y1y2)
-        self.psi_Tk_y1_intrp = intrp(self.Tk[1:], self.psi_Tk_y1)
-        self.phi_Tk_y1_intrp = intrp(self.Tk[1:], self.phi_Tk_y1)
-        self.phi_Tk_n1_intrp = intrp(self.Tk[1:], self.phi_Tk_n1)
+        self.psi_Tk_y1y2_intrp = sp.interpolate.interp1d(self.Tk[1:], self.psi_Tk_y1y2)
+        self.psi_Tk_y1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.psi_Tk_y1)
+        self.phi_Tk_y1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.phi_Tk_y1)
+        self.phi_Tk_n1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.phi_Tk_n1)
 
     def doSimulation(self):
         self.initialize()
@@ -159,7 +159,7 @@ class QgyModel:
         G_tT_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
 
         T = max(T, self.Tk[k])
-        sigma = np.exp(self.R_Tk_y[k-1] * self.Tk[k-1])
+        sigma = np.exp(self.R_Tk_y[k-1] * self.Tk[k])
         G_tT_ny1 += (T - self.Tk[k]) * sigma * self.rho_n_y1
         G_tT_y1 += (T - self.Tk[k]) * sigma * sigma
 
@@ -171,7 +171,7 @@ class QgyModel:
         print("phi_tk_y1 = ", self.phi_Tk_y1)
         print("psi_tk_y1_y2 = ", self.psi_Tk_y1y2)
         print("psi_tk_y1 = ", self.psi_Tk_y1)
-        print("A_Tk = ", self.A_tk)
+        print("A_Tk = ", self.A_Tk)
         print("G_t_ny1 = ", self.G_Tk_ny1)
         print("G_t_y1 = ", self.G_Tk_y1)
 
