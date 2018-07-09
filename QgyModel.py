@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import norm
+import scipy.interpolate.interp1d as intrp
 import matplotlib.pyplot as plt
 
 class QgyModel:
@@ -52,6 +53,21 @@ class QgyModel:
         cosV_Tk_y = np.sqrt(1 - np.square(self.sinV_Tk_y))
         phi_tilde = self.Sigma_Tk_y/self.K_Tk_y * cosV_Tk_y
         self.phi_Tk_y1 = -phi_tilde/np.sqrt(self.G_Tk_y1[1:])
+
+    def phi_y(self, i):
+        return np.array([[0, self.phi_Tk_y1[i], 0]])
+
+    def phi_y_at(self, t):
+        return np.array([[0, self.phi_Tk_y1_intrp(t), 0]])
+
+    def phi_n_at(self, t):
+        return np.array([[self.phi_Tk_n1_intrp(t), 0, 0]])
+
+    def psi_y(self, i):
+        return np.array([[0, 0, 0],[0, self.psi_Tk_y1[i], self.psi_Tk_y1y2[i]], [0, self.psi_Tk_y1y2[i], 0]])
+
+    def psi_y_at(self, t):
+        return np.array([[0, 0, 0], [0, self.psi_Tk_y1(t), self.psi_Tk_y1y2(t)], [0, self.psi_Tk_y1y2(t), 0]])
 
     def computeATk(self):
         n = self.Tk.size
@@ -111,15 +127,19 @@ class QgyModel:
         self.computePsi_Tk_y1()
         self.computePsi_Tk_y1y2()
         self.computeATk()
-
+        self.generate_interpolation()
         self.print_debug()
+
+    def generate_interpolation(self):
+        self.psi_Tk_y1y2_intrp = intrp(self.Tk[1:], self.psi_Tk_y1y2)
+        self.psi_Tk_y1_intrp = intrp(self.Tk[1:], self.psi_Tk_y1)
+        self.phi_Tk_y1_intrp = intrp(self.Tk[1:], self.phi_Tk_y1)
+        self.phi_Tk_n1_intrp = intrp(self.Tk[1:], self.phi_Tk_n1)
 
     def doSimulation(self):
         self.initialize()
-
-
-        #start simulation
-        for i in range(5000):
+        # start simulation
+        for i in range(50):
             self.computeYtkDtk()
             plt.subplot(1,2,1)
             plt.plot(self.Tk[1:], self.Y_Tk)
@@ -134,10 +154,16 @@ class QgyModel:
     def M_tT(self, psi, G):
         return np.linalg.inv(np.eye(3,3) + psi * G)
 
-    def G_tT(self, i, k):
+    def G_tT(self, i, k, T=0):
         G_tT_ny1 = self.G_Tk_ny1[k]-self.G_Tk_ny1[i]
         G_tT_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
-        return np.array([[self.Tk[k] - self.Tk[i], G_tT_ny1, 0],
+
+        T = max(T, self.Tk[k])
+        sigma = np.exp(self.R_Tk_y[k-1] * self.Tk[k-1])
+        G_tT_ny1 += (T - self.Tk[k]) * sigma * self.rho_n_y1
+        G_tT_y1 += (T - self.Tk[k]) * sigma * sigma
+
+        return np.array([[T - self.Tk[i], G_tT_ny1, 0],
                         [G_tT_ny1, G_tT_y1, 0],
                         [0, 0, G_tT_y1]])
 
@@ -148,6 +174,9 @@ class QgyModel:
         print("A_Tk = ", self.A_tk)
         print("G_t_ny1 = ", self.G_Tk_ny1)
         print("G_t_y1 = ", self.G_Tk_y1)
+
+    def price_by_qgy(self):
+        raise NotImplementedError()
 
     @staticmethod
     def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt):
