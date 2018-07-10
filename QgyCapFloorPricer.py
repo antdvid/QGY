@@ -46,6 +46,7 @@ class IICapFloorQgy(QgyModel):
         swaplet_pricer = IISwapQGY()
         E0_DY = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T)
 
+        print("ND1 = ", ND1, "ND2 = ", ND2)
         return E0_DY * ND2 - K * P_0T * ND1
 
     def compute_Nd(self, G_Tk_sqrt, Phi_Tk_y, Psi_Tk_y, L_Tk, K, x_t):
