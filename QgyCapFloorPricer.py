@@ -1,5 +1,5 @@
-from QgyModel import *
 from QgIntegration import *
+from QgySwapPricer import *
 import numpy as np
 import scipy as sp
 
@@ -7,20 +7,20 @@ import scipy as sp
 class IICapFloorQgy(QgyModel):
     def __init__(self):
         QgyModel.__init__(self)
-        self.tol = 1e-5
+        self.tol = 1e-4
 
     def price_caplet_by_qgy(self, k, T, K, P_0T):
         dim = 3
 
         # intermediate variables
-        Phi_T_n = np.ndarray.transpose(self.phi_n_at(T))
-        Phi_Tk_y = np.ndarray.transpose(self.phi_y(k))
+        Phi_T_n = self.phi_n_at(T)
+        Phi_Tk_y = self.phi_y(k)
         Psi_T_n = np.zeros([dim,dim])
         Psi_Tk_y = self.psi_y(k)
         G_Tk = self.G_tT(0,k)
         G_sqrt = sp.linalg.sqrtm(G_Tk)
-        x_t = np.zeros([3, 1])
-        L_Tk = self.I0_Tk[k]/self.I0_Tk[k-1] * np.exp(self.A_Tk[k-1])
+        x_t = np.zeros([1, 3])
+        L_Tk = self.I0_Tk[k]/self.I0_Tk[k-1] * np.exp(self.A_Tk[k])
         print("G_Tk = ", G_Tk)
         print("G_sqrt = ", G_sqrt)
         print("x_t = ", x_t)
@@ -34,36 +34,35 @@ class IICapFloorQgy(QgyModel):
         M_Psi = M.dot(Psi_T_n)
         G_Tk_1 = self.transform_G(G_Tk, M_Psi)
         G_sqrt_1 = self.transform_G_sqrt(G_sqrt, M_Psi)
-        x_t_1 = self.transofrm_x_t(x_t, G_Tk, G_Tk_1, M, Phi_T_n)
+        x_t_1 = self.transofrm_x_t(x_t, G_Tk, G_Tk_1, M, Phi_T_n).T
         ND1 = self.compute_Nd(G_sqrt_1, Phi_Tk_y, Psi_Tk_y, L_Tk, K, x_t_1)
 
         # compute ND2
         G_Tk_2 = self.transform_G(G_Tk_1, Psi_Tk_y)
         G_sqrt_2 = self.transform_G_sqrt(G_sqrt_1, Psi_Tk_y)
-        x_t_2 = self.transofrm_x_t(x_t_1, G_Tk_1, G_Tk_2, np.eye(dim), Phi_Tk_y)
+        x_t_2 = self.transofrm_x_t(x_t_1, G_Tk_1, G_Tk_2, np.eye(dim), Phi_Tk_y).T
         ND2 = self.compute_Nd(G_sqrt_2, Phi_Tk_y, Psi_Tk_y, L_Tk, K, x_t_2)
 
-        #swaplet_pricer = IISwapQGY()
-        #E0_DY = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T)
-        E0_DY = 0.0
+        swaplet_pricer = IISwapQGY()
+        E0_DY = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T)
 
-        print("Nd1 = ", ND1, "Nd2 = ", ND2)
         return E0_DY * ND2 - K * P_0T * ND1
 
     def compute_Nd(self, G_Tk_sqrt, Phi_Tk_y, Psi_Tk_y, L_Tk, K, x_t):
-        M = G_Tk_sqrt.dot(Phi_Tk_y + Psi_Tk_y.dot(x_t))
+        M = G_Tk_sqrt.dot(Phi_Tk_y.T + Psi_Tk_y.dot(x_t.T))
         N = 0.5 * G_Tk_sqrt.dot(Psi_Tk_y).dot(G_Tk_sqrt)
-        F = np.asscalar(np.log(L_Tk/K) - np.inner(Phi_Tk_y.T, x_t.T) - 0.5 * np.inner(x_t.T, Psi_Tk_y.dot(x_t).T))
+        F = np.log(L_Tk/K) - Phi_Tk_y.dot(x_t.T) - 0.5 * x_t.dot(Psi_Tk_y.dot(x_t.T))
         print("M = ", M)
         print("N = ", N)
         print("F = ", F)
-        if np.fabs(M[0]) > self.tol or np.fabs(N[0][0] * N[0][1] * N[0][2] * N[1][0] * N[2][0]) > self.tol:
+        if np.fabs(M[0]) > self.tol or np.fabs(N[0, 0] * N[0, 1] * N[0, 2] * N[1, 0] * N[2, 0]) > self.tol:
             raise NotImplementedError
-        A = N[1][1]
-        B = N[1][2] + N[2][1]
-        C = N[2][2]
+        A = N[1,1]
+        B = N[1,2] + N[2,1]
+        C = N[2,2]
         D = np.asscalar(M[1])
         E = np.asscalar(M[2])
+        F = np.asscalar(F)
         print("coeff = ", A, B, C, D, E, -F)
         int_solver = QgIntegration(A, B, C, D, E, -F)
         res = int_solver.compute_gaussian_integration()
@@ -76,7 +75,7 @@ class IICapFloorQgy(QgyModel):
         return G_Tk_sqrt.dot(np.linalg.inv(sp.linalg.sqrtm(np.eye(dim) + G_Tk_sqrt.dot(Psi).dot(G_Tk_sqrt))))
 
     def transofrm_x_t(self, x_t, G_orig, G_new, M, Phi):
-        return G_new.dot(np.linalg.inv(G_orig).dot(x_t) - M.dot(Phi))
+        return G_new.dot(np.linalg.inv(G_orig).dot(x_t.T) - M.dot(Phi.T))
 
 if __name__ == "__main__":
     T = 15
@@ -84,4 +83,5 @@ if __name__ == "__main__":
     k = 5
     P_0T = np.exp(0.02 * T)
     pricer = IICapFloorQgy()
-    pricer.price_caplet_by_qgy(k, T, K, P_0T)
+    price = pricer.price_caplet_by_qgy(k, T, K, P_0T)
+    print("cap price = ", price)

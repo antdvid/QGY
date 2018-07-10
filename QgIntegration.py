@@ -10,6 +10,13 @@ class QgIntegration:
         # P(x,y) = Ax^2 + Bxy + Cy^2 + Dx + Ey + F
         # transform to polar coordinates theta, r
         # P(x,y) = Q(theta) r**2 + L(theta) r + F
+        if not np.isscalar(A) \
+                or not np.isscalar(B) \
+                or not np.isscalar(C) \
+                or not np.isscalar(D) \
+                or not np.isscalar(E) \
+                or not np.isscalar(F):
+            raise NotImplementedError
         self.A = A
         self.B = B
         self.C = C
