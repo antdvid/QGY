@@ -26,16 +26,16 @@ class InflationData:
         return np.column_stack([maturity, data])
 
 def get_rpi_test():
-    start_date = pd.Timestamp(2001, 12, 1)
-    end_date = pd.Timestamp(2012, 12, 1)
-    ref_date = pd.Timestamp(2011, 12, 1)
+    start_date = pd.Timestamp(1986, 12, 1)
+    end_date = pd.Timestamp(2018, 12, 1)
+    ref_date = pd.Timestamp(2012, 1, 1)
     rpi = InflationData.get_rpi_series(start_date, end_date)
     inf_ref = rpi[rpi[:, 0] == ref_date, 1]
-    print(rpi[:,1])
+    space = 12
     plt.subplot(1,2,1)
-    plt.plot(rpi[:,0], rpi[:,1]/inf_ref)
+    plt.plot(rpi[::space,0], rpi[::space,1]/inf_ref)
     plt.subplot(1,2,2)
-    plt.plot(rpi[1:,0], rpi[1:, 1]/rpi[:-1, 1] - 1)
+    plt.plot(rpi[1::space,0], rpi[1::space, 1]/rpi[:-1:space, 1] - 1)
     plt.show()
 
 def get_fwd_test():

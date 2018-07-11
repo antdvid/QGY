@@ -16,6 +16,8 @@ class QgIntegration:
                 or not np.isscalar(D) \
                 or not np.isscalar(E) \
                 or not np.isscalar(F):
+            print(A, B, C, D, E, F)
+            print(np.isscalar(A), np.isscalar(B), np.isscalar(C), np.isscalar(D), np.isscalar(E), np.isscalar(F))
             raise NotImplementedError
         self.A = A
         self.B = B

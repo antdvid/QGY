@@ -11,7 +11,7 @@ class QgyModel:
         self.Sigma_Tk_y = 0.01 * np.array(
             [np.nan, 1.80, 2.72, 3.39, 3.84, 4.16, 4.43, 4.57, 4.48, 4.64, 4.66, 4.63, 4.61, 4.61, 4.60, 4.58, 4.58, 4.54,
              4.51, 4.43, 4.38, 4.46, 4.47, 4.47, 4.46, 4.45, 4.60, 4.56, 4.56, 4.57, 4.60])
-        self.sinV_Tk_y = -0.01 * np.array(
+        self.sinV_Tk_y = 0.01 * np.array(
             [np.nan, 64.9, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0,
              80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0])
         self.sinRho_Tk_y = -0.01 * np.array(
@@ -30,10 +30,12 @@ class QgyModel:
         self.Tk = np.array(
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
              29, 30])
-        self.I0_Tk = np.array(
-            [173.3, 173.8, 174.5, 175.7, 176.2, 176.2, 175.9, 176.4, 177.6, 177.9, 178.2, 178.5, 178.4, 179.3, 179.9,
-             181.2, 181.5, 181.3, 181.3, 181.6, 182.5, 182.6, 182.7, 183.5, 183.1, 183.8, 184.6, 185.7, 186.5, 186.8,
-             186.8])
+        # self.I0_Tk = np.array(
+        #     [100.0, 103.3, 111.0, 119.5, 130.2, 135.6, 137.9, 141.3, 146.0, 150.2, 154.4, 159.5,
+        #      163.4, 166.6, 171.1, 173.3, 178.4, 183.1, 188.9, 193.4, 201.6, 209.8, 210.1, 217.9,
+        #      229.0, 238.0, 245.8, 252.6, 255.4, 258.8, 265.5])
+        self.I0_Tk = self.gernate_fake_forward_inflation_index()
+
         self.G_Tk_y1 = None
         self.G_Tk_y2 = None
         self.G_Tk_ny1 = None
@@ -42,18 +44,31 @@ class QgyModel:
         self.phi_Tk_y1 = None
         self.phi_Tk_n1 = np.ones(self.n) * 0.02
         self.A_Tk = None
+        self.sigma = None
 
         self.initialize()
 
+    def gernate_fake_forward_inflation_index(self):
+        Y_Tk = 0.01 * np.array([2.8, 2.7, 2.95, 3.0, 3.4, 3.3, 3.4, 3.3, 3.4, 3.3, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4,
+                                3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4]) + 1
+        res = []
+        I = 100
+        for y in Y_Tk:
+            I *= y
+            res.append(I)
+        return np.array(res)
+
+    def compute_sigma_Tk(self):
+        self.sigma = np.exp(self.R_Tk_y * self.Tk)
+        self.sigma[0] = 0
+
     def computeG_Tk_y(self):
         # integrate (sigma)^2 from 0 to t
-        sigma = np.exp(self.R_Tk_y * self.Tk)
-        self.G_Tk_y1 = self.G_Tk_y2 = self.pad_before_array(0, np.cumsum(sigma[1:] * sigma[1:] * np.diff(self.Tk)))
+        self.G_Tk_y1 = self.G_Tk_y2 = self.pad_before_array(0, np.cumsum(self.sigma[1:] * self.sigma[1:] * np.diff(self.Tk)))
 
     def computeG_Tk_ny(self):
         # integrate (sigma)^2 from 0 to t
-        sigma = np.exp(self.R_Tk_y * self.Tk)
-        self.G_Tk_ny1 = self.pad_before_array(0, np.cumsum(self.rho_n_y1 * sigma[1:] * np.diff(self.Tk)))
+        self.G_Tk_ny1 = self.pad_before_array(0, np.cumsum(self.rho_n_y1 * self.sigma[1:] * np.diff(self.Tk)))
 
     def computePsi_Tk_y1y2(self):
         cosRho_Tk_y = np.sqrt(1 - np.square(self.sinRho_Tk_y))
@@ -123,11 +138,11 @@ class QgyModel:
             A_sum += self.A_Tk[k]
 
     def generate_terms_structure(self):
-        sigma1 = 0.1
-        sigma1 = np.repeat(sigma1, self.n_per_year * self.n)
-        sigma2 = sigma1
+        self.sigma[0] = 1
+        sigma2 = np.repeat(self.sigma, self.n_per_year)
+        sigma_n = np.repeat(1, self.n_per_year * self.n)
 
-        [x_n, x_y1] = self.generate_two_correlated_gauss(sigma1, sigma2, self.rho_n_y1, self.n * self.n_per_year, 1/self.n_per_year)
+        [x_n, x_y1] = self.generate_two_correlated_gauss(sigma_n, sigma2, self.rho_n_y1, self.n * self.n_per_year, 1/self.n_per_year)
         x_y2 = self.generate_one_gauss(sigma2, self.n * self.n_per_year, 1/self.n_per_year)
 
         x_Tk_y1 = x_y1[::self.n_per_year]
@@ -136,6 +151,8 @@ class QgyModel:
         self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_Tk[1:] - (self.phi_Tk_y1[1:]
                                                                               + 0.5 * self.psi_Tk_y1[1:] * x_Tk_y1[1:]
                                                                               + self.psi_Tk_y1y2[1:] * x_Tk_y2[1:]) * x_Tk_y1[1:])
+        Y_0 = self.I0_Tk[1]/self.I0_Tk[0]
+        self.Y_Tk = np.insert(self.Y_Tk, 0, Y_0)
 
         # TODO: here we ignore t belongs [0, 1), since we don't we extrapolation yet
         self.t = np.linspace(self.Tk[0], self.Tk[-1], self.n * self.n_per_year)
@@ -146,7 +163,8 @@ class QgyModel:
         self.D_t = P0t * np.exp(-phi_t_n1 * x_n - 0.5 * np.square(phi_t_n1) * G_t_n)
 
     def initialize(self):
-        #initialize, setup parameters
+        # initialize, setup parameters
+        self.compute_sigma_Tk()
         self.computeG_Tk_ny()
         self.computeG_Tk_y()
         self.computePhi_tk_y()
@@ -154,25 +172,13 @@ class QgyModel:
         self.computePsi_Tk_y1y2()
         self.computeATk()
         self.generate_interpolation()
-        self.print_debug()
+        #self.print_debug()
 
     def generate_interpolation(self):
         self.psi_Tk_y1y2_intrp = sp.interpolate.interp1d(self.Tk[1:], self.psi_Tk_y1y2[1:])
         self.psi_Tk_y1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.psi_Tk_y1[1:])
         self.phi_Tk_y1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.phi_Tk_y1[1:])
         self.phi_Tk_n1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.phi_Tk_n1[1:])
-
-
-    def doSimulation(self):
-        self.initialize()
-        # start simulation
-        for i in range(50):
-            self.generate_terms_structure()
-            plt.subplot(1,2,1)
-            plt.plot(self.Tk[1:], self.Y_Tk)
-            plt.subplot(1,2,2)
-            plt.plot(self.t, self.D_t)
-        plt.show()
 
     def E_tT(self, phi, M, G):
         ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * phi.dot(G.dot(M).dot(phi.T)))
@@ -232,4 +238,12 @@ class QgyModel:
 
 if __name__ == "__main__":
     qgy = QgyModel()
-    qgy.doSimulation()
+    qgy.initialize()
+    # start simulation
+    for i in range(50):
+        qgy.generate_terms_structure()
+        plt.subplot(1, 2, 1)
+        plt.plot(qgy.Tk, qgy.Y_Tk)
+        plt.subplot(1, 2, 2)
+        plt.plot(qgy.t, qgy.D_t)
+    plt.show()

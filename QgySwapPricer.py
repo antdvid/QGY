@@ -1,11 +1,21 @@
 from QgyModel import *
 import numpy as np
+import scipy
 
 
 class IISwapQGY(QgyModel):
     def __init__(self):
         QgyModel.__init__(self)
 
+    def price_yoy_inflation_forward_by_qgy(self):
+        E_tT_xTk = np.zeros(self.Tk.size)
+        for k in range(self.Tk.size):
+            G = self.G_tT(0, k)
+            M = self.M_tT(self.psi_y(k), G)
+            E_tT_xTk[k] = self.E_tT(self.phi_y(k), M, G)
+        y_tT = self.I0_Tk[1:]/self.I0_Tk[:-1] * np.exp(self.A_Tk[1:]) * E_tT_xTk[1:] - 1
+        y_tT = np.insert(y_tT, 0, 0)
+        return y_tT
 
     def price_swaplet_by_qgy(self, h, k, T):
         r = 0.02
@@ -42,8 +52,26 @@ class IISwapQGY(QgyModel):
 
         return np.asscalar(res)
 
+def test_swaplet():
+    pricer = IISwapQGY()
+    swaplet_price = []
+    Tk = []
+    for k in range(1, 30):
+        T = pricer.Tk[k]
+        P_0T = np.exp(-0.02 * T)
+        price = pricer.price_swaplet_by_qgy(k-1, k, T)
+        swaplet_price.append(price)
+        Tk.append(T)
+
+    plt.plot(Tk, np.array(swaplet_price) - 1, 'o-')
+    plt.show()
+
+def test_yoy_infln_fwd():
+    pricer = IISwapQGY()
+    res = pricer.price_yoy_inflation_forward_by_qgy()
+    plt.plot(pricer.Tk, res)
+    plt.show()
 
 if __name__ == "__main__":
-    pricer = IISwapQGY()
-    res = pricer.price_swaplet_by_qgy(5, 10, 15)
-    print("res = ", res)
+    test_yoy_infln_fwd()
+
