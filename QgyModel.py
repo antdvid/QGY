@@ -17,7 +17,6 @@ class QgyModel:
         self.sinRho_Tk_y = -0.01 * np.array(
             [np.nan, 11.7, 15.4, 21.3, 25.5, 32.9, 36.2, 39.5, 41.1, 47.0, 49.7, 53.1, 55.2, 57.7, 59.6, 61.9, 64.7, 65.4,
              65.7, 65.0, 64.9, 62.6, 62.2, 62.6, 63.2, 63.6, 68.7, 69.0, 69.6, 70.5, 74.0])
-        self.K_Tk_y = np.sqrt(np.square(self.sinV_Tk_y * self.sinRho_Tk_y) + 1)
         self.R_Tk_y = 0.01 * np.array(
             [np.nan, 0.0, 59.2, 76.7, 89.5, 97.8, 104.4, 109.2, 112.2, 114.7, 116.7, 117.9, 119.1, 119.7, 120.5, 121.0, 121.0,
              121.4, 121.5, 121.7, 121.8, 121.6, 121.8, 121.9, 122.1, 122.3, 122.6, 123.0, 123.4, 123.8, 124.2])
@@ -42,17 +41,21 @@ class QgyModel:
         self.psi_Tk_y1y2 = None
         self.psi_Tk_y1 = None
         self.phi_Tk_y1 = None
-        self.phi_Tk_n1 = np.ones(self.n) * 0.02
+        self.phi_Tk_n1 = None
         self.A_Tk = None
         self.sigma = None
 
         self.initialize()
 
     def gernate_fake_forward_inflation_index(self):
-        Y_Tk = 0.01 * np.array([2.8, 2.7, 2.95, 3.0, 3.4, 3.3, 3.4, 3.3, 3.4, 3.3, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4,
-                                3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4]) + 1
+        Y_Tk = 0.01 * np.array([0.0, 2.9, 2.65, 2.9, 3.0, 3.3,
+                                     3.3, 3.3, 3.3, 3.4, 3.3,
+                                     3.45, 3.5, 3.5, 3.51, 3.52,
+                                     3.55, 3.6, 3.6, 3.6, 3.6,
+                                     3.42, 3.41, 3.4, 3.41, 3.42,
+                                     3.6, 3.65, 3.68, 3.65, 3.65]) + 1
         res = []
-        I = 100
+        I = 1
         for y in Y_Tk:
             I *= y
             res.append(I)
@@ -60,7 +63,7 @@ class QgyModel:
 
     def compute_sigma_Tk(self):
         self.sigma = np.exp(self.R_Tk_y * self.Tk)
-        self.sigma[0] = 0
+        self.sigma[0] = 1
 
     def computeG_Tk_y(self):
         # integrate (sigma)^2 from 0 to t
@@ -83,6 +86,12 @@ class QgyModel:
         cosV_Tk_y = np.sqrt(1 - np.square(self.sinV_Tk_y))
         phi_tilde = self.Sigma_Tk_y/self.K_Tk_y * cosV_Tk_y
         self.phi_Tk_y1 = -phi_tilde/np.sqrt(self.G_Tk_y1)
+
+    def computePhi_tk_n1(self):
+        self.phi_Tk_n1 = np.zeros(self.n)
+
+    def computeK_Tk_y(self):
+        self.K_Tk_y = np.sqrt(np.square(self.sinV_Tk_y * self.sinRho_Tk_y) + 1)
 
     def phi_y(self, i):
         return np.asmatrix([0, self.phi_Tk_y1[i], 0])
@@ -113,7 +122,7 @@ class QgyModel:
         if self.A_Tk is None:
             self.A_Tk = np.empty(n)
 
-        A_sum = 0
+        A_exp_prod = 1
         for k in range(1, n):
             phi_n = self.phi_n(k)
             psi_n = self.psi_n()
@@ -126,7 +135,7 @@ class QgyModel:
             E_prod = 1
             for i in range(k, 0, -1):
                 G = self.G_tT(i-1, i)
-                M = np.linalg.inv(np.eye(3) + H1.dot(G))
+                M = self.M_tT(H1, G)
                 E_prod *= self.E_tT(H0, M, G)
 
                 Theta0 = M.dot(H0.T).T
@@ -134,8 +143,8 @@ class QgyModel:
                 H0 = Theta0 + self.phi_y(i)
                 H1 = Theta1 + self.psi_y(i)
 
-            self.A_Tk[k] = np.log(E_0Tk / E_prod) - A_sum
-            A_sum += self.A_Tk[k]
+            self.A_Tk[k] = np.log(E_0Tk / E_prod / A_exp_prod)
+            A_exp_prod = E_0Tk / E_prod
 
     def generate_terms_structure(self):
         self.sigma[0] = 1
@@ -156,23 +165,39 @@ class QgyModel:
 
         # TODO: here we ignore t belongs [0, 1), since we don't we extrapolation yet
         self.t = np.linspace(self.Tk[0], self.Tk[-1], self.n * self.n_per_year)
-        r = 0.02
-        P0t = np.exp(-r * self.t)
+        P0t = self.P_0T(self.t)
         phi_t_n1 = np.repeat(self.phi_Tk_n1, self.n_per_year)
         G_t_n = self.t
         self.D_t = P0t * np.exp(-phi_t_n1 * x_n - 0.5 * np.square(phi_t_n1) * G_t_n)
 
+    def P_0T(self, t):
+        r = 0.02
+        return np.exp(-r * t)
+
     def initialize(self):
         # initialize, setup parameters
+        self.computeK_Tk_y()
         self.compute_sigma_Tk()
         self.computeG_Tk_ny()
         self.computeG_Tk_y()
         self.computePhi_tk_y()
+        self.computePhi_tk_n1()
         self.computePsi_Tk_y1()
         self.computePsi_Tk_y1y2()
         self.computeATk()
         self.generate_interpolation()
         #self.print_debug()
+
+    def reset_parameters(self):
+        self.G_Tk_y1 = None
+        self.G_Tk_y2 = None
+        self.G_Tk_ny1 = None
+        self.psi_Tk_y1y2 = None
+        self.psi_Tk_y1 = None
+        self.phi_Tk_y1 = None
+        self.phi_Tk_n1 = None
+        self.A_Tk = None
+        self.sigma = None
 
     def generate_interpolation(self):
         self.psi_Tk_y1y2_intrp = sp.interpolate.interp1d(self.Tk[1:], self.psi_Tk_y1y2[1:])
@@ -180,7 +205,17 @@ class QgyModel:
         self.phi_Tk_y1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.phi_Tk_y1[1:])
         self.phi_Tk_n1_intrp = sp.interpolate.interp1d(self.Tk[1:], self.phi_Tk_n1[1:])
 
+    def E_tT_simple(self, h, k, phi, psi):
+        G = self.G_tT(h, k)
+        M = self.M_tT(psi, G)
+        return self.E_tT(phi, M, G)
+
     def E_tT(self, phi, M, G):
+        try:
+            np.linalg.cholesky(M)
+        except:
+            print("M is not positive definite", M)
+            raise NotImplementedError
         ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * phi.dot(G.dot(M).dot(phi.T)))
         return ans
 
@@ -199,6 +234,15 @@ class QgyModel:
         return np.asmatrix([[T - self.Tk[i], G_tT_ny1, 0],
                         [G_tT_ny1, G_tT_y1, 0],
                         [0, 0, G_tT_y1]])
+
+    def fill_spherical_parameters(self, Sigma, v_y, rho_y, rho_ny1, R_y):
+        self.reset_parameters()
+        self.Sigma_Tk_y.fill(Sigma)
+        self.sinV_Tk_y.fill(np.sin(v_y))
+        self.sinRho_Tk_y.fill(np.sin(rho_y))
+        self.rho_n_y1 = rho_ny1
+        self.R_Tk_y.fill(R_y)
+        self.initialize()
 
     def print_debug(self):
         print("phi_tk_y1 = ", self.phi_Tk_y1)

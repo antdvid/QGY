@@ -23,7 +23,7 @@ class IICapFloorQgy(QgyModel):
         L_Tk = self.I0_Tk[k]/self.I0_Tk[k-1] * np.exp(self.A_Tk[k])
 
         # compute ND1
-        M = np.linalg.inv(np.eye(dim) + Psi_T_n.dot(self.G_tT(k, k, T)))
+        M = self.M_tT(Psi_T_n, self.G_tT(k,k,T))
         M_Psi = M.dot(Psi_T_n)
         G_Tk_1 = self.transform_G(G_Tk, M_Psi)
         G_sqrt_1 = self.transform_G_sqrt(G_sqrt, M_Psi)
