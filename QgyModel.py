@@ -140,8 +140,8 @@ class QgyModel:
 
                 Theta0 = M.dot(H0.T).T
                 Theta1 = M.dot(H1).T
-                H0 = Theta0 + self.phi_y(i)
-                H1 = Theta1 + self.psi_y(i)
+                H0 = Theta0 + self.phi_y(i-1)
+                H1 = Theta1 + self.psi_y(i-1)
 
             self.A_Tk[k] = np.log(E_0Tk / E_prod / A_exp_prod)
             A_exp_prod = E_0Tk / E_prod
