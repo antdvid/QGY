@@ -16,17 +16,15 @@ class IISwapQGY(QgyModel):
         res /= E0T
 
         G = self.G_tT(k,k,T)
-        M = self.M_tT(self.psi_y_at(T), G)
+        M = self.M_tT(self.psi_n_at(T), G)
         H0 = M.dot(self.phi_n_at(T).T).T + self.phi_y(k)
         H1 = M.dot(self.psi_n_at(T).T).T + self.psi_y(k)
 
         for i in range(k, h+1, -1):
-            G = self.G_tT(i-1,i)
-            M = self.M_tT(H1, G)
-            res *= self.E_tT(H0, M, G)
+            res *= self.E_tT_simple(i-1, i, H0, H1)
 
             # update H0, H1
-            G = self.G_tT(i - 2, i - 1)
+            G = self.G_tT(i - 1, i)
             M = self.M_tT(H1, G)
             H0 = M.dot(H0.T).T + self.phi_y(i-1)
             H1 = M.dot(H1.T).T + self.psi_y(i-1)
@@ -64,7 +62,7 @@ def test_swaplet():
 
 if __name__ == "__main__":
     pricer = IISwapQGY()
-    res = pricer.price_yoy_infln_fwd()
-    plt.plot(pricer.Tk, res)
-    plt.show()
+    T = 30
+    res = pricer.price_swaplet_by_qgy(2, T, T, np.exp(-0.02 * T))
+    print("res = ", res)
 
