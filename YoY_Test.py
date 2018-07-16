@@ -61,8 +61,8 @@ def psi_y(i):
     return np.matrix([[0, 0, 0], [0, psi_y1[i-1], psi_y1y2[i-1]], [0, psi_y1y2[i-1], 0]])
 
 
-#R_test = 0.01 * np.array([0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024])
-R_test = 0.01 * np.array([0])
+R_test = 0.01 * np.array([0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024])
+# R_test = 0.01 * np.array([0])
 for R in R_test:
     T = np.array([0, 1, 2])
     G = [G_tT(0, T[1]), G_tT(0, T[2])]

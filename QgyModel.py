@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import norm
 import scipy as sp
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize
 
 class QgyModel:
     def __init__(self):
@@ -54,12 +55,7 @@ class QgyModel:
                                      3.55, 3.6, 3.6, 3.6, 3.6,
                                      3.42, 3.41, 3.4, 3.41, 3.42,
                                      3.6, 3.65, 3.68, 3.65, 3.65]) + 1
-        res = []
-        I = 1
-        for y in Y_Tk:
-            I *= y
-            res.append(I)
-        return np.array(res)
+        return self.Yt_to_It(Y_Tk)
 
     def compute_sigma_Tk(self):
         self.sigma = np.exp(self.R_Tk_y * self.Tk)
@@ -163,7 +159,7 @@ class QgyModel:
         Y_0 = self.I0_Tk[1]/self.I0_Tk[0]
         self.Y_Tk = np.insert(self.Y_Tk, 0, Y_0)
 
-        # TODO: here we ignore t belongs [0, 1), since we don't we extrapolation yet
+        # TODO: here we ignore t belongs [0, 1), since we don't have extrapolation yet
         self.t = np.linspace(self.Tk[0], self.Tk[-1], self.n * self.n_per_year)
         P0t = self.P_0T(self.t)
         phi_t_n1 = np.repeat(self.phi_Tk_n1, self.n_per_year)
@@ -186,6 +182,7 @@ class QgyModel:
         self.computePsi_Tk_y1y2()
         self.computeATk()
         self.generate_interpolation()
+        #self.I0_Tk = self.fit_yoy_convexity_correction(self.I0_Tk)
         #self.print_debug()
 
     def reset_parameters(self):
@@ -227,7 +224,7 @@ class QgyModel:
         G_tT_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
 
         T = max(T, self.Tk[k])
-        sigma = np.exp(self.R_Tk_y[k] * self.Tk[k])
+        sigma = self.sigma[k]
         G_tT_ny1 += (T - self.Tk[k]) * sigma * self.rho_n_y1
         G_tT_y1 += (T - self.Tk[k]) * sigma * sigma
 
@@ -255,6 +252,60 @@ class QgyModel:
     def price_by_qgy(self):
         raise NotImplementedError()
 
+    def price_swaplet_by_qgy(self, h, k, T, P_0T):
+        sum_A = np.sum(self.A_Tk[h+1:k+1])
+        res = P_0T * self.I0_Tk[k]/self.I0_Tk[h] * np.exp(sum_A)
+        G = self.G_tT(0,k,T)
+        M = self.M_tT(self.psi_n_at(T), G)
+        E0T = self.E_tT(self.phi_n_at(T), M, G)
+        res /= E0T
+
+        G = self.G_tT(k,k,T)
+        M = self.M_tT(self.psi_n_at(T), G)
+        H0 = M.dot(self.phi_n_at(T).T).T + self.phi_y(k)
+        H1 = M.dot(self.psi_n_at(T).T).T + self.psi_y(k)
+
+        for i in range(k, h+1, -1):
+            res *= self.E_tT_simple(i-1, i, H0, H1)
+
+            # update H0, H1
+            G = self.G_tT(i - 1, i)
+            M = self.M_tT(H1, G)
+            H0 = M.dot(H0.T).T + self.phi_y(i-1)
+            H1 = M.dot(H1.T).T + self.psi_y(i-1)
+
+        res *= self.E_tT_simple(0, h+1, H0, H1)
+
+        return np.asscalar(res)
+
+    def price_yoy_infln_fwd(self):
+        swaplet_price = [0]
+        Tk = [0]
+
+        for k in range(1, self.Tk.size):
+            T = self.Tk[k]
+            P_0T = self.P_0T(T)
+            price = self.price_swaplet_by_qgy(k - 1, k, T, P_0T) / P_0T - 1
+            swaplet_price.append(price)
+            Tk.append(T)
+        return np.array(swaplet_price)
+
+    def fit_yoy_convexity_correction(self, I0_Tk):
+        yoy_infln_fwd = self.price_yoy_infln_fwd()
+        Tk = self.Tk
+        #Y0_Tk = I0_Tk[1:]/I0_Tk[:-1]
+        #plt.plot(Tk[1:], yoy_infln_fwd[1:] - (Y0_Tk - 1), 'o')
+        def target(a):
+            Y_0T_fit = yoy_infln_fwd[1:] + 1 + a * np.log(Tk[1:])
+            I_0T_fit = self.Yt_to_It(Y_0T_fit)
+            ans = np.sqrt(np.sum(np.square(I_0T_fit - I0_Tk[1:])))
+            return ans
+
+        a_fit = minimize(target, x0=np.array([0]), method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
+        Y_0T_fit = 1 + yoy_infln_fwd[1:] + a_fit * np.log(Tk[1:])
+        I_0T_fit = np.concatenate([[1], self.Yt_to_It(Y_0T_fit)])
+        return I_0T_fit
+
     @staticmethod
     def pad_before_array(num, v):
         return np.concatenate([[num], v])
@@ -278,6 +329,15 @@ class QgyModel:
         dx = dw * sigma
         x = np.cumsum(dx, axis=-1)
         return x
+
+    @staticmethod
+    def Yt_to_It(Yt):
+        res = []
+        I = 1
+        for y in Yt:
+            I *= y
+            res.append(I)
+        return np.array(res)
 
 
 if __name__ == "__main__":

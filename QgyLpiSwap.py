@@ -32,6 +32,6 @@ class LpiSwapQgy(QgyModel):
 
 if __name__ == '__main__':
     pricer = LpiSwapQgy()
-    #pricer.price_yoy_lpi_swap_by_qgy(0.00, 0.05)
-    pricer.price_yoy_lpi_swap_by_qgy(0.00, 100)
+    pricer.price_yoy_lpi_swap_by_qgy(0.00, 0.05)
+    #pricer.price_yoy_lpi_swap_by_qgy(0.00, 100)
 
