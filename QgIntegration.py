@@ -72,7 +72,7 @@ class QgIntegration:
         elif F > 0 and Q > 0 and L > 0:
             return 0
         elif F > 0 and Q > 0 and L <= 0:
-            return np.exp(-0.5 * r_m ** 2  - np.exp(-0.5 * r_p ** 2))
+            return np.exp(-0.5 * r_m ** 2) - np.exp(-0.5 * r_p ** 2)
         elif F <= 0 and Q > 0:
             return 1.0 - np.exp(-0.5 * r_p ** 2)
         elif F <= 0 and Q < 0 and L <= 0:
@@ -114,6 +114,9 @@ class QgIntegration:
             # B not = 0, C = 0
             ans.add(0.5 * np.pi)
             ans = ans.union(self.find_periodic_root_between(np.arctan(-A/B), 0, 2*np.pi, np.pi))
+
+        if B**2 - 4 * A * C < 0:
+            return ans
 
         if  np.abs(C) > self.tol:
             # C not = 0

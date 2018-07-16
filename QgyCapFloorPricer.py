@@ -9,7 +9,7 @@ class IICapFloorQgy(QgyModel):
         QgyModel.__init__(self)
         self.tol = 1e-10
 
-    def price_caplet_by_qgy(self, k, T, K, P_0T):
+    def price_caplet_floorlet_by_qgy(self, k, T, K, P_0T, is_caplet):
         dim = 3
 
         # intermediate variables
@@ -39,8 +39,15 @@ class IICapFloorQgy(QgyModel):
         swaplet_pricer = IISwapQGY()
         E0_DY = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T)
 
-        print(ND1, ND2)
-        return E0_DY * ND2 - K * P_0T * ND1
+        if is_caplet:
+            ans = E0_DY * ND2 - K * P_0T * ND1
+        else:
+            ans = -E0_DY * (1 - ND2) + K * P_0T * (1 - ND1)
+        if ans < 0:
+            print("ans =", ans)
+            print("ND1 = ", ND1, "ND2 = ", ND2)
+            raise NotImplementedError
+        return ans
 
     def compute_Nd(self, G_Tk_sqrt, Phi_Tk_y, Psi_Tk_y, L_Tk, K, x_t):
         M = G_Tk_sqrt.T.dot(Phi_Tk_y.T + Psi_Tk_y.dot(x_t.T))
@@ -56,7 +63,10 @@ class IICapFloorQgy(QgyModel):
         D = np.real(np.asscalar(M[1, 0]))
         E = np.real(np.asscalar(M[2, 0]))
         F = np.real(np.asscalar(F))
-        print(A, B, C, D, E, F)
+        if not np.isscalar(D):
+            D = np.asscalar(D)
+        if not np.isscalar(E):
+            E = np.asscalar(E)
         int_solver = QgIntegration(A, B, C, D, E, -F)
         res = int_solver.compute_gaussian_integration()
         return res
@@ -73,16 +83,22 @@ class IICapFloorQgy(QgyModel):
 
 
 if __name__ == "__main__":
-    K = 0.8
+    K_cap = 1.05
+    K_floor = 1.00
     pricer = IICapFloorQgy()
     cap_price = []
+    floor_price = []
     Tk = []
     for k in range(1, 30):
         T = pricer.Tk[k]
-        P_0T = np.exp(-0.002 * T)
-        price = pricer.price_caplet_by_qgy(k, T, K, P_0T)
+        P_0T = np.exp(-0.01 * T)
+        price = pricer.price_caplet_floorlet_by_qgy(k, T, K_cap, P_0T, True)
         cap_price.append(price)
+        price = pricer.price_caplet_floorlet_by_qgy(k, T, K_floor, P_0T, False)
+        floor_price.append(price)
         Tk.append(T)
 
-    plt.plot(Tk, cap_price)
+    plt.plot(Tk, cap_price, 'o-', label='caplet')
+    plt.plot(Tk, floor_price, 'o-', label='floorlet')
+    plt.legend()
     plt.show()
