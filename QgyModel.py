@@ -35,6 +35,7 @@ class QgyModel:
         #      163.4, 166.6, 171.1, 173.3, 178.4, 183.1, 188.9, 193.4, 201.6, 209.8, 210.1, 217.9,
         #      229.0, 238.0, 245.8, 252.6, 255.4, 258.8, 265.5])
         self.I0_Tk = self.gernate_fake_forward_inflation_index()
+        print(self.I0_Tk)
 
         self.G_Tk_y1 = None
         self.G_Tk_y2 = None
