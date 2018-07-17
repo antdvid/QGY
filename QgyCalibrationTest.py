@@ -65,6 +65,9 @@ for year_index in range(1, Tk.size):
     #     print("warning: cannot find suitable parameters")
     #     print("parameters = ", qgy.Sigma_Tk_y[year_index], qgy.sinRho_Tk_y[year_index], qgy.sinV_Tk_y[year_index], qgy.R_Tk_y[year_index])
 
-plt.plot(md_time_series, md_price_series, 'o')
-plt.plot(Tk, price, 'r--')
+plt.plot(md_time_series, md_price_series, 'o', label='Model Price')
+plt.plot(Tk, price, 'r--', label='Market price')
+plt.xlabel('Maturity')
+plt.ylabel('5% Cap')
+plt.legend(loc='upper left')
 plt.show()
