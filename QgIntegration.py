@@ -57,14 +57,17 @@ class QgIntegration:
         L = self.L(theta)
 
         # not roots
-        if L**2 - 4 * F * Q < 0 and F > 0:
+        if L**2 - 4 * F * Q <= 0 and F > 0:
             return 0
-        elif L**2 - 4 * F * Q < 0 and F < 0:
+        elif L**2 - 4 * F * Q <= 0 and F < 0:
             return 1
 
         # one or two roots
-        r_p = self.root_plus(theta)
-        r_m = self.root_minus(theta)
+        if Q == 0:
+            r_p = r_m = None
+        else:
+            r_p = self.root_plus(theta)
+            r_m = self.root_minus(theta)
         r_0 = self.root_zero(theta)
 
         if F > 0 and Q < 0:
@@ -172,6 +175,8 @@ class QgIntegration:
         ans = ans.union(roots_of_Q)
         ans = ans.union(roots_of_L)
         ans = ans.union(roots_of_M)
+        if len(ans) == 0:
+            return [0, 2*np.pi]
         ans.add(min(ans) + 2 * np.pi)
         return sorted(ans)
 

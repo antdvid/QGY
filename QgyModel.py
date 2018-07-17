@@ -35,7 +35,6 @@ class QgyModel:
         #      163.4, 166.6, 171.1, 173.3, 178.4, 183.1, 188.9, 193.4, 201.6, 209.8, 210.1, 217.9,
         #      229.0, 238.0, 245.8, 252.6, 255.4, 258.8, 265.5])
         self.I0_Tk = self.gernate_fake_forward_inflation_index()
-        print(self.I0_Tk)
 
         self.G_Tk_y1 = None
         self.G_Tk_y2 = None
@@ -240,6 +239,14 @@ class QgyModel:
         self.sinRho_Tk_y.fill(np.sin(rho_y))
         self.rho_n_y1 = rho_ny1
         self.R_Tk_y.fill(R_y)
+        self.initialize()
+
+    def set_spherical_parameters_at(self, k, Sigma, v_y, rho_y, rho_ny1, R_y):
+        self.Sigma_Tk_y[k] = Sigma
+        self.sinV_Tk_y[k] = np.sin(v_y)
+        self.sinRho_Tk_y[k] = np.sin(rho_y)
+        self.rho_n_y1 = rho_ny1
+        self.R_Tk_y[k] = R_y
         self.initialize()
 
     def print_debug(self):

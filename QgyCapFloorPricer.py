@@ -9,9 +9,12 @@ class IICapFloorQgy(QgyModel):
         QgyModel.__init__(self)
         self.tol = 1e-10
 
-    def price_caplet_floorlet_by_qgy(self, k, T, K, P_0T, is_caplet):
+    def price_caplet_floorlet_by_qgy(self, k, T, K_in, P_0T, is_caplet):
         dim = 3
-
+        if abs(K_in) > 0.5:
+            print("Warning: strike = {} is too large, make sure your definition of cap is for I_k/I_k-1 - 1".format(K))
+            raise NotImplementedError
+        K = K_in+1
         # intermediate variables
         Phi_T_n = self.phi_n_at(T).T
         Phi_Tk_y = self.phi_y(k).T
@@ -44,7 +47,7 @@ class IICapFloorQgy(QgyModel):
             ans = E0_DY * ND2 - K * P_0T * ND1
         else:
             ans = -E0_DY * (1 - ND2) + K * P_0T * (1 - ND1)
-        if ans < 0:
+        if ans < -self.tol:
             print("ans =", ans)
             print("ND1 = ", ND1, "ND2 = ", ND2)
             raise NotImplementedError
@@ -85,8 +88,8 @@ class IICapFloorQgy(QgyModel):
 
 
 if __name__ == "__main__":
-    K_cap = 1.05
-    K_floor = 1.05
+    K_cap = 0.05
+    K_floor = 0.05
     pricer = IICapFloorQgy()
     swaplet_pricer = IISwapQGY()
     cap_price = []
@@ -101,7 +104,7 @@ if __name__ == "__main__":
         price = pricer.price_caplet_floorlet_by_qgy(k, T, K_floor, P_0T, False)
         floor_price.append(price)
 
-        price = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T) - K_cap * P_0T
+        price = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T) - (1 + K_cap) * P_0T
         swaplet_price.append(price)
 
     plt.plot(pricer.Tk[1:], cap_price, 'o-', label='caplet')

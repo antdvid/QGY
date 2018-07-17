@@ -1,10 +1,10 @@
-import numpy as np
-import scipy as sp
-import scipy.stats as stats
-import scipy.optimize as opt
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import numpy as np
+import scipy.stats as stats
+import scipy.optimize as opt
 
 
 class QgyVolSurface():
@@ -20,21 +20,38 @@ class QgyVolSurface():
 
     def compute_fwd_call_from_zc_vol(self, sigma, k, strike):
         tau = self.Tk[k] - 0.0
-        return self.compute_fwd_call_from_abs_lognorm_vol(sigma, 0, k, np.power(1.0 + strike, tau))
+        return self.compute_fwd_call_from_abs_lognorm_vol(sigma * tau, 0, k, np.power(1.0 + strike, tau))
 
     def compute_fwd_call_from_yoy_vol(self, sigma, k, strike):
         return self.compute_fwd_call_from_abs_lognorm_vol(sigma, k-1, k, 1 + strike)
 
-    def find_yoy_vol_find_price(self, price, k, strike):
+    def find_yoy_vol_from_fwd_caplet_price(self, price, k, strike):
+        # def target(sigma):
+        #     ans = self.compute_fwd_call_from_yoy_vol(sigma, k, strike) - price
+        #     return ans**2
+        # opt_res = opt.minimize(target, x0=np.array([0.1]), bounds=([0, None]))
+        # return opt_res
         def target(sigma):
-            return self.compute_fwd_call_from_yoy_vol(sigma, k, strike) - price
-        vol = opt.brentq(target, -1, 1)
-        return vol
+            ans = self.compute_fwd_call_from_yoy_vol(sigma, k, strike) - price
+            return ans
+        opt_res = opt.root(target, [0.1])
+        return opt_res
+
+    def find_zc_vol_from_fwd_caplet_price(self, price, k, strike):
+        # def target(sigma):
+        #     ans = self.compute_fwd_call_from_zc_vol(sigma, k, strike) - price
+        #     return ans**2
+        # bnds = [(0, None)]
+        # x0 = np.array([0.8])
+        # opt_res = opt.minimize(target, x0=x0, bounds=bnds, method='SLSQP')
+        def target(sigma):
+            ans = self.compute_fwd_call_from_zc_vol(sigma, k, strike) - price
+            return ans
+        opt_res = opt.root(target, [0.1])
+        return opt_res
 
 
 if __name__ == "__main__":
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
     Tk = np.array(
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
          29, 30])
@@ -56,6 +73,7 @@ if __name__ == "__main__":
                                     [1513.46, 1119.27, 770.33, 496.04, 306.01, 186.36, 114.56, 71.92, 46.30],
                                     [1825.27, 1367.22, 951.66, 621.59, 393.09, 248.78, 160.67, 106.64, 72.80],
                                     [2500.60, 1926.13, 1373.61, 917.37, 596.82, 392.65, 265.78, 185.70, 133.64]])
+    risk_free = 0.01
 
     vol_solver = QgyVolSurface(Tk, I0_Tk)
     vol = np.zeros([cap_maturity.size, cap_strikes.size])
@@ -64,12 +82,14 @@ if __name__ == "__main__":
             price = cap_price[j,i]
             T = cap_maturity[j]
             strike = cap_strikes[i]
-            vol[j][i] = vol_solver.find_yoy_vol_find_price(price, int(T), strike)
-            print("vol", j, i, "=", T, strike, vol[j][i])
+            opt_res = vol_solver.find_zc_vol_from_fwd_caplet_price(price, int(T), strike/np.exp(-risk_free * T))
+            vol[j][i] = opt_res.x
+            print("vol", j, i, "=", T, strike, vol[j][i], 'error = ', opt_res.fun, "niter = ", opt_res.nfev)
 
-    [XX, YY] = np.meshgrid(cap_strikes, cap_maturity)
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
 
-    print(XX.shape, YY.shape, vol.shape)
-    surf = ax.plot_surface(XX, YY, vol, cmap=cm.coolwarm)
+    XX, YY = np.meshgrid(cap_strikes, cap_maturity)
+
+    surf = ax.plot_surface(XX, YY, vol, cmap=cm.coolwarm, linewidth=0.1, rstride=1, cstride=1, antialiased=False)
     plt.show()
-
