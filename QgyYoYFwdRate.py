@@ -16,7 +16,8 @@ for R in R_Tk:
     plt.plot(qgy.Tk[1:], y_tT[1:] * 100, 'o-', label="R = {}%".format(R * 100))
 
 plt.plot(qgy.Tk[1:], 100 * (qgy.I0_Tk[1:]/qgy.I0_Tk[:-1] - 1), 'r-o', label='Naive forward')
-
+plt.xlabel('Maturity')
+plt.ylabel('YoY Inflation Forward Rate')
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
           fancybox=True, shadow=True, ncol=5)
 plt.show()
