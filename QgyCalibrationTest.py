@@ -39,15 +39,14 @@ risk_free = 0.01
 vol_mkt = []
 for k in range(price.size):
     P_0T = np.exp(-risk_free * Tk[k])
-    vol = volsurf.find_yoy_vol_from_fwd_caplet_price(price[k], Tk[k], cap_strike/P_0T)
+    vol = volsurf.find_yoy_vol_from_fwd_caplet_price(price[k]/P_0T, k, cap_strike)
     vol_mkt.append(vol.x)
-
-print("market vol = ", vol_mkt)
+    print("market vol = ", vol.x, "err = ", vol.fun)
 
 # do calibration
 qgy = IICapFloorQgy()
 year_index = 1
-x0 = np.array([0.02, 0.6, -0.1, 0.5])
+x0 = np.array([0.01, 0.6, -0.1, 0.5])
 bnds = ((None, None), (0, np.pi/2), (-np.pi/2, np.pi/2), (0, None))
 md_price_series = []
 md_time_series = []

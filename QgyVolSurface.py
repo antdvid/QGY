@@ -26,28 +26,17 @@ class QgyVolSurface():
         return self.compute_fwd_call_from_abs_lognorm_vol(sigma, k-1, k, 1 + strike)
 
     def find_yoy_vol_from_fwd_caplet_price(self, price, k, strike):
-        # def target(sigma):
-        #     ans = self.compute_fwd_call_from_yoy_vol(sigma, k, strike) - price
-        #     return ans**2
-        # opt_res = opt.minimize(target, x0=np.array([0.1]), bounds=([0, None]))
-        # return opt_res
         def target(sigma):
             ans = self.compute_fwd_call_from_yoy_vol(sigma, k, strike) - price
             return ans
-        opt_res = opt.root(target, [0.1])
+        opt_res = opt.root(target, np.array([0.1]))
         return opt_res
 
     def find_zc_vol_from_fwd_caplet_price(self, price, k, strike):
-        # def target(sigma):
-        #     ans = self.compute_fwd_call_from_zc_vol(sigma, k, strike) - price
-        #     return ans**2
-        # bnds = [(0, None)]
-        # x0 = np.array([0.8])
-        # opt_res = opt.minimize(target, x0=x0, bounds=bnds, method='SLSQP')
         def target(sigma):
             ans = self.compute_fwd_call_from_zc_vol(sigma, k, strike) - price
             return ans
-        opt_res = opt.root(target, [0.1])
+        opt_res = opt.root(target, np.array([0.1]))
         return opt_res
 
 
