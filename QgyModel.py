@@ -90,7 +90,8 @@ class QgyModel:
         self.phi_Tk_y1[1:] = -phi_tilde[1:]/np.sqrt(self.G_Tk_y1[1:])
 
     def computePhi_tk_n1(self):
-        self.phi_Tk_n1 = np.zeros(self.n)
+        #self.phi_Tk_n1 = np.zeros(self.n)
+        self.phi_Tk_n1 = np.ones(self.n) * 0.01
 
     def computeK_Tk_y(self):
         self.K_Tk_y = np.sqrt(np.square(self.sinV_Tk_y * self.sinRho_Tk_y) + 1)
@@ -214,11 +215,6 @@ class QgyModel:
         return self.E_tT(phi, M, G)
 
     def E_tT(self, phi, M, G):
-        try:
-            np.linalg.cholesky(M)
-        except:
-            print("M is not positive definite", M)
-            raise NotImplementedError
         ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * phi.dot(G.dot(M).dot(phi.T)))
         return ans
 
@@ -362,6 +358,10 @@ class QgyModel:
             res.append(I)
         return np.array(res)
 
+    @staticmethod
+    def is_symmetric(a, tol=1e-8):
+        return np.allclose(a, a.T, atol=tol)
+
 
 if __name__ == "__main__":
     qgy = QgyModel()
@@ -371,6 +371,10 @@ if __name__ == "__main__":
         qgy.generate_terms_structure()
         plt.subplot(1, 2, 1)
         plt.plot(qgy.Tk, qgy.Y_Tk)
+        plt.xlabel('Maturity')
+        plt.ylabel('YoY inflation ratio')
         plt.subplot(1, 2, 2)
         plt.plot(qgy.t, qgy.D_t)
+        plt.xlabel('Maturity')
+        plt.ylabel('Inverse numeraire')
     plt.show()

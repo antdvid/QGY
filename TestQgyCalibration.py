@@ -52,12 +52,13 @@ md_price_series = []
 md_time_series = []
 err = 0
 nit = 0
+print("year  Sigma  v  rho  R")
 for year_index in range(1, Tk.size):
     P_0T = np.exp(-risk_free * Tk[year_index])
     #try:
     opt_res = minimize(target_func, x0, method='L-BFGS-B', bounds=bnds)
     x0 = opt_res.x
-    print("year ", year_index, "params = ", x0, "err = ", opt_res.fun, "vol err = ", err, "vol iters = ", nit)
+    print('{:d}\t{:2.3f}\t\t{:2.3f}\t\t{:2.3f}\t\t{:2.3f}\t\t{:2.3e}\t\t{:d}'.format(year_index, x0[0], x0[1], x0[2], x0[3], np.asscalar(opt_res.fun), nit))
     model_price = qgy.price_caplet_floorlet_by_qgy(year_index, Tk[year_index], cap_strike, P_0T, True)
     md_price_series.append(model_price)
     md_time_series.append(Tk[year_index])

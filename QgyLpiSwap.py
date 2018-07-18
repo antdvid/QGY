@@ -3,7 +3,7 @@ from QgyModel import *
 
 class LpiSwapQgy(QgyModel):
     def price_yoy_lpi_swap_by_qgy(self, floor, cap):
-        N = 20
+        N = 200
         price = 0
         for i in range(N):
             self.generate_terms_structure()
@@ -13,7 +13,9 @@ class LpiSwapQgy(QgyModel):
             Y_Tk = self.Y_Tk
             P_Tk = self.generate_yoy_lpi_price(Y_Tk, floor, cap)
             S_Tk = self.generate_lpi_swap_rate(self.Tk, P_Tk, self.I0_Tk)
-            plt.plot(Tk, S_Tk * 100)
+            plt.plot(Tk, P_Tk * 100)
+            plt.xlabel('Maturity')
+            plt.ylabel('LPI [%]')
         plt.show()
 
     def generate_yoy_lpi_price(self, Y_Tk, floor, cap):

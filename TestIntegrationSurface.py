@@ -2,7 +2,7 @@ import numpy as np
 from QgIntegration import *
 
 
-A = [ 0.01629928058610646, 0.030639289555152945, 0.0, -0.026034146964633652, 0.0, 0.000383595708792]
+A = [ 0.001, 0.01, -7e-5, -0.01, 5e-6, -0.03]
 print('test 1: plot polynomial on r and theta')
 qg_int = QgIntegration(A[0], A[1], A[2], A[3], A[4], A[5])
 theta = np.linspace(0, 2 * np.pi, 200)

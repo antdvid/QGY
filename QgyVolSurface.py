@@ -27,16 +27,17 @@ class QgyVolSurface():
 
     def find_yoy_vol_from_fwd_caplet_price(self, price, k, strike):
         def target(sigma):
-            ans = self.compute_fwd_call_from_yoy_vol(sigma, k, strike) - price
+            lgnm_price = self.compute_fwd_call_from_yoy_vol(sigma, k, strike)
+            ans = lgnm_price - price
             return ans
-        opt_res = opt.root(target, np.array([0.1]))
+        opt_res = opt.brentq(target, -1, 1)
         return opt_res
 
     def find_zc_vol_from_fwd_caplet_price(self, price, k, strike):
         def target(sigma):
             ans = self.compute_fwd_call_from_zc_vol(sigma, k, strike) - price
             return ans
-        opt_res = opt.root(target, np.array([0.1]))
+        opt_res = opt.brentq(target, -1, 1)
         return opt_res
 
 
@@ -72,8 +73,8 @@ if __name__ == "__main__":
             T = cap_maturity[j]
             strike = cap_strikes[i]
             opt_res = vol_solver.find_zc_vol_from_fwd_caplet_price(price, int(T), strike/np.exp(-risk_free * T))
-            vol[j][i] = opt_res.x
-            print("vol", j, i, "=", T, strike, vol[j][i], 'error = ', opt_res.fun, "niter = ", opt_res.nfev)
+            vol[j][i] = opt_res
+            # print("vol", j, i, "=", T, strike, vol[j][i], 'error = ', opt_res.fun, "niter = ", opt_res.nfev)
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')

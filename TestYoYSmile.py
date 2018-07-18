@@ -28,7 +28,7 @@ def generate_sinrho_test_data():
     sin_v_test = np.ones(sin_rho_test.size) * 0.8
 
 # prepare data
-case = 1
+case = 2
 options = {0: generate_sigma_test_data,
            1: generate_sinv_test_data,
            2: generate_sinrho_test_data}
@@ -43,7 +43,7 @@ case_name_map = {0: '$\Sigma_{T_k}$',
                  2: r'$\sin \rho_{T_k}$'}
 
 strikes = 0.01 * np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7])
-R_Tk_y = 0.6
+R_Tk_y = 0.0
 rho_n_y1 = -0.1
 
 ax = plt.subplot(111)
@@ -52,13 +52,14 @@ vol_surface = QgyVolSurface(caplet_pricer.Tk, caplet_pricer.I0_Tk)
 num_test = Sigma_test.size
 year_index = 1
 P_0T = np.exp(-0.01 * caplet_pricer.Tk[year_index])
-for i in range(num_test):
+for i in range(0, num_test):
     smile = []
     caplet_pricer.fill_sin_parameters(Sigma_test[i], sin_v_test[i], sin_rho_test[i], rho_n_y1, R_Tk_y)
     for stk in strikes:
         price = caplet_pricer.price_caplet_floorlet_by_qgy(year_index, caplet_pricer.Tk[year_index], stk, P_0T, True)
-        opt_res = vol_surface.find_yoy_vol_from_fwd_caplet_price(price, year_index, stk)
-        smile.append(opt_res.x)
+        opt_res = vol_surface.find_yoy_vol_from_fwd_caplet_price(price/P_0T, year_index, stk)
+        smile.append(opt_res)
+        #print("     calibration_err = ", opt_res.fun)
     legend_string = '{} = {:2.1f}%'.format(case_name_map[case], case_var_map[case][i] * 100)
     print(legend_string)
     plt.plot(strikes, smile, 'o-', label=legend_string)
