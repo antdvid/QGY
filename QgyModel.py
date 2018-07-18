@@ -72,16 +72,22 @@ class QgyModel:
     def computePsi_Tk_y1y2(self):
         cosRho_Tk_y = np.sqrt(1 - np.square(self.sinRho_Tk_y))
         psi_tilde = - self.Sigma_Tk_y/ self.K_Tk_y * self.sinV_Tk_y * cosRho_Tk_y
-        self.psi_Tk_y1y2 = - psi_tilde / np.sqrt(self.G_Tk_y1 * self.G_Tk_y2)
+        self.psi_Tk_y1y2 = np.empty(self.G_Tk_y1.size)
+        self.psi_Tk_y1y2[0] = np.NaN
+        self.psi_Tk_y1y2[1:] = - psi_tilde[1:] / np.sqrt(self.G_Tk_y1[1:] * self.G_Tk_y2[1:])
 
     def computePsi_Tk_y1(self):
         psi_tilde = self.Sigma_Tk_y/self.K_Tk_y * self.sinV_Tk_y * self.sinRho_Tk_y
-        self.psi_Tk_y1 = -2 * psi_tilde / self.G_Tk_y1
+        self.psi_Tk_y1 = np.empty(self.G_Tk_y1.size)
+        self.psi_Tk_y1[0] = np.NaN
+        self.psi_Tk_y1[1:] = -2 * psi_tilde[1:] / self.G_Tk_y1[1:]
 
     def computePhi_tk_y(self):
         cosV_Tk_y = np.sqrt(1 - np.square(self.sinV_Tk_y))
         phi_tilde = self.Sigma_Tk_y/self.K_Tk_y * cosV_Tk_y
-        self.phi_Tk_y1 = -phi_tilde/np.sqrt(self.G_Tk_y1)
+        self.phi_Tk_y1 = np.empty(self.G_Tk_y1.size)
+        self.phi_Tk_y1[0] = np.NaN
+        self.phi_Tk_y1[1:] = -phi_tilde[1:]/np.sqrt(self.G_Tk_y1[1:])
 
     def computePhi_tk_n1(self):
         self.phi_Tk_n1 = np.zeros(self.n)
@@ -237,6 +243,15 @@ class QgyModel:
         self.Sigma_Tk_y.fill(Sigma)
         self.sinV_Tk_y.fill(np.sin(v_y))
         self.sinRho_Tk_y.fill(np.sin(rho_y))
+        self.rho_n_y1 = rho_ny1
+        self.R_Tk_y.fill(R_y)
+        self.initialize()
+
+    def fill_sin_parameters(self, Sigma, sin_v_y, sin_rho_y, rho_ny1, R_y):
+        self.reset_parameters()
+        self.Sigma_Tk_y.fill(Sigma)
+        self.sinV_Tk_y.fill(sin_v_y)
+        self.sinRho_Tk_y.fill(sin_rho_y)
         self.rho_n_y1 = rho_ny1
         self.R_Tk_y.fill(R_y)
         self.initialize()

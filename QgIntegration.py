@@ -49,6 +49,9 @@ class QgIntegration:
         return (-L - np.sqrt(L**2 - 4 * self.F * Q))/(2 * Q)
 
     def root_zero(self, theta):
+        if self.L(theta) == 0:
+            print("Err: L == 0")
+            raise NotImplementedError
         return - self.F/self.L(theta)
 
     def integrand(self, theta):
@@ -68,7 +71,10 @@ class QgIntegration:
         else:
             r_p = self.root_plus(theta)
             r_m = self.root_minus(theta)
-        r_0 = self.root_zero(theta)
+        if L == 0:
+            r_0 = None
+        else:
+            r_0 = self.root_zero(theta)
 
         if F > 0 and Q < 0:
             return np.exp(-0.5 * r_m ** 2)
