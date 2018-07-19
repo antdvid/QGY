@@ -58,7 +58,7 @@ for i in range(0, num_test):
     for stk in strikes:
         price = caplet_pricer.price_caplet_floorlet_by_qgy(year_index, caplet_pricer.Tk[year_index], stk, P_0T, True)
         opt_res = vol_surface.find_yoy_vol_from_fwd_caplet_price(price/P_0T, year_index, stk)
-        smile.append(opt_res)
+        smile.append(opt_res[0])
         #print("     calibration_err = ", opt_res.fun)
     legend_string = '{} = {:2.1f}%'.format(case_name_map[case], case_var_map[case][i] * 100)
     print(legend_string)

@@ -14,7 +14,7 @@ for k in range(1, maturity.size):
     for j in range(strikes.size):
         price = qgy.price_caplet_floorlet_by_qgy(k, maturity[k], strikes[j], P_0T, True)
         vol_res = vol_surface.find_yoy_vol_from_fwd_caplet_price(price/P_0T, k, strikes[j])
-        v_surf[k-1][j] = vol_res
+        v_surf[k-1][j] = vol_res[0]
 
 
 XX, YY = np.meshgrid(strikes, maturity[1:])

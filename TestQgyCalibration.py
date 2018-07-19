@@ -12,11 +12,9 @@ def target_func(input):
     qgy.set_spherical_parameters_at(year_index, Sigma_Tk_y, v_Tk_y, rho_Tk_y, rho_n_y1, R_Tk_y)
     model_price = qgy.price_caplet_floorlet_by_qgy(year_index, Tk[year_index], cap_strike, P_0T, True)
     fwd_model_price = model_price/P_0T
-    opt_res = volsurf.find_yoy_vol_from_fwd_caplet_price(fwd_model_price, Tk[year_index], cap_strike)
-    im_vol = opt_res.x
-    global nit, err
-    nit = opt_res.nfev
-    err = opt_res.fun
+    im_vol, opt_res = volsurf.find_yoy_vol_from_fwd_caplet_price(fwd_model_price, Tk[year_index], cap_strike)
+    global nit
+    nit = opt_res.iterations
     return (im_vol - vol_mkt[year_index])**2
 
 
@@ -39,9 +37,9 @@ risk_free = 0.01
 vol_mkt = []
 for k in range(price.size):
     P_0T = np.exp(-risk_free * Tk[k])
-    vol = volsurf.find_yoy_vol_from_fwd_caplet_price(price[k]/P_0T, k, cap_strike)
-    vol_mkt.append(vol.x)
-    print("market vol = ", vol.x, "err = ", vol.fun)
+    vol, opt_res = volsurf.find_yoy_vol_from_fwd_caplet_price(price[k]/P_0T, k, cap_strike)
+    vol_mkt.append(vol)
+    print("market vol = ", vol, "niter = ", opt_res.iterations)
 
 # do calibration
 qgy = IICapFloorQgy()
@@ -52,13 +50,13 @@ md_price_series = []
 md_time_series = []
 err = 0
 nit = 0
-print("year  Sigma  v  rho  R")
+print("year  Sigma  v  rho  R   err     niters")
 for year_index in range(1, Tk.size):
     P_0T = np.exp(-risk_free * Tk[year_index])
     #try:
     opt_res = minimize(target_func, x0, method='L-BFGS-B', bounds=bnds)
     x0 = opt_res.x
-    print('{:d}\t{:2.3f}\t\t{:2.3f}\t\t{:2.3f}\t\t{:2.3f}\t\t{:2.3e}\t\t{:d}'.format(year_index, x0[0], x0[1], x0[2], x0[3], np.asscalar(opt_res.fun), nit))
+    print('{:d}\t{:2.3f}\t\t{:2.3f}\t\t{:2.3f}\t\t{:2.3f}\t\t{:2.3e}\t\t{:d}'.format(year_index, x0[0], x0[1], x0[2], x0[3], opt_res.fun, opt_res.nfev))
     model_price = qgy.price_caplet_floorlet_by_qgy(year_index, Tk[year_index], cap_strike, P_0T, True)
     md_price_series.append(model_price)
     md_time_series.append(Tk[year_index])
