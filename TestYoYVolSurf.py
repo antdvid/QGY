@@ -16,13 +16,16 @@ for k in range(1, maturity.size):
         vol_res = vol_surface.find_yoy_vol_from_fwd_caplet_price(price/P_0T, k, strikes[j])
         v_surf[k-1][j] = vol_res[0]
 
+print(v_surf.shape)
+for i in range(strikes.size):
+    print(",".join(format(x, "10.3f") for x in v_surf[:, i]))
 
 XX, YY = np.meshgrid(strikes, maturity[1:])
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
-print(XX.shape, YY.shape, v_surf.shape)
 surf = ax.plot_surface(XX, YY, v_surf, cmap=cm.coolwarm, linewidth=0.1, rstride=1, cstride=1, antialiased=False)
+
 plt.xlabel('strikes')
 plt.ylabel('maturity')
 plt.show()

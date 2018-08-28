@@ -23,5 +23,8 @@ def test_swaplet():
 if __name__ == "__main__":
     pricer = IISwapQGY()
     T = 30
-    res = pricer.price_swaplet_by_qgy(2, T, T, np.exp(-0.02 * T))
-    print("res = ", res)
+    res_list = []
+    for i in range(1, T+1):
+        res = pricer.price_swaplet_by_qgy(0, i-1, i, np.exp(-0.01 * i))
+        res_list.append(res)
+    print(res_list)

@@ -95,18 +95,19 @@ if __name__ == "__main__":
     cap_price = []
     floor_price = []
     swaplet_price = []
-    for k in range(1, pricer.Tk.size):
+    for k in range(1, 2):#pricer.Tk.size):
         T = pricer.Tk[k]
-        P_0T = np.exp(-0.002 * T)
+        P_0T = np.exp(-0.01 * T)
         price = pricer.price_caplet_floorlet_by_qgy(k, T, K_cap, P_0T, True)
         cap_price.append(price)
 
-        price = pricer.price_caplet_floorlet_by_qgy(k, T, K_floor, P_0T, False)
-        floor_price.append(price)
+        # price = pricer.price_caplet_floorlet_by_qgy(k, T, K_floor, P_0T, False)
+        # floor_price.append(price)
+        #
+        # price = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T) - (1 + K_cap) * P_0T
+        # swaplet_price.append(price)
 
-        price = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T) - (1 + K_cap) * P_0T
-        swaplet_price.append(price)
-
+    print(cap_price)
     plt.plot(pricer.Tk[1:], cap_price, 'o-', label='caplet')
     plt.plot(pricer.Tk[1:], floor_price, 'o-', label='floorlet')
     plt.plot(pricer.Tk[1:], swaplet_price, 'o-', label='swaplet')

@@ -26,6 +26,7 @@ class QgIntegration:
         self.E = E
         self.F = F
         self.tol = 1e-10
+        self.isDebug = False
 
     def Q(self, theta):
         return self.A * np.cos(theta)**2 + self.B * np.sin(theta) * np.cos(theta) + self.C * np.sin(theta) ** 2
@@ -37,6 +38,10 @@ class QgIntegration:
         return (self.D**2 - 4 * self.A*self.F) * np.cos(theta)**2 \
                + (2 * self.D * self.E - 4 * self.B * self.F) * np.sin(theta) * np.cos(theta) \
                + (self.E**2 - 4 * self.C * self.F) * np.sin(theta)**2
+
+    def dbg(self, str):
+        if self.isDebug:
+            print(str)
 
     def root_plus(self, theta):
         L = self.L(theta)
@@ -61,8 +66,10 @@ class QgIntegration:
 
         # not roots
         if L**2 - 4 * F * Q <= 0 and F > 0:
+            self.dbg('1')
             return 0
         elif L**2 - 4 * F * Q <= 0 and F < 0:
+            self.dbg('2')
             return 1
 
         # one or two roots
@@ -77,28 +84,40 @@ class QgIntegration:
             r_0 = self.root_zero(theta)
 
         if F > 0 and Q < 0:
+            self.dbg('3')
             return np.exp(-0.5 * r_m ** 2)
         elif F > 0 and Q > 0 and L > 0:
+            self.dbg('4')
             return 0
         elif F > 0 and Q > 0 and L <= 0:
+            self.dbg('5')
             return np.exp(-0.5 * r_m ** 2) - np.exp(-0.5 * r_p ** 2)
         elif F <= 0 and Q > 0:
+            self.dbg('6 ' + str(Q))
             return 1.0 - np.exp(-0.5 * r_p ** 2)
         elif F <= 0 and Q < 0 and L <= 0:
+            self.dbg('7' + str(Q))
             return 1.0
         elif F <= 0 and Q < 0 and L > 0:
+            self.dbg('8')
             return 1 + np.exp(-0.5 * r_m ** 2) - np.exp(-0.5 * r_p ** 2)
         elif F > 0 and np.abs(Q) < self.tol and np.abs(L) < self.tol:
+            self.dbg('9')
             return 0
         elif F > 0 and np.abs(Q)  < self.tol and L > 0:
+            self.dbg('10')
             return 0
         elif F > 0 and np.abs(Q) < self.tol and L < 0:
+            self.dbg('11')
             return np.exp(-0.5 * r_0 ** 2)
         elif F <= 0 and np.abs(Q) < self.tol and np.abs(L) < self.tol:
+            self.dbg('12')
             return 1
         elif F <= 0 and np.abs(Q) < self.tol and L > 0:
+            self.dbg('13')
             return 1 - np.exp(-0.5 * r_0 ** 2)
         elif F <= 0 and np.abs(Q) < self.tol and L < 0:
+            self.dbg('14')
             return 1
         else:
             raise NotImplementedError
@@ -121,7 +140,7 @@ class QgIntegration:
 
         if np.abs(B) > self.tol and np.abs(C) < self.tol:
             # B not = 0, C = 0
-            ans.add(0.5 * np.pi)
+            ans.union(self.find_periodic_root_between(np.pi/2, 0, 2*np.pi, np.pi))
             ans = ans.union(self.find_periodic_root_between(np.arctan(-A/B), 0, 2*np.pi, np.pi))
 
         if B**2 - 4 * A * C < 0:
@@ -160,6 +179,7 @@ class QgIntegration:
         for i in range(len(roots)-1):
             lb = roots[i]
             ub = roots[i+1]
+            self.isDebug = False
             integ = integrate.quad(self.integrand, lb, ub)
             res.append(integ[0]/(2 * np.pi))
         return res

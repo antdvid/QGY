@@ -17,7 +17,6 @@ def target_func(input):
     nit = opt_res.iterations
     return (im_vol - vol_mkt[year_index])**2
 
-
 # prepare data
 price = 0.01 * np.array([0., 0.1, 0.2, 0.66, 1.33, 2, 2.6, 3.2, 3.8, 4, 4.6, 5.2, 5.8, 6, 6.6, 7, 7.6, 7.8, 8, 8.3, 8.6, 9, 9.2,
                          9.4, 9.8, 9.9, 10, 10.1, 10.6, 10.8, 11])
@@ -41,6 +40,7 @@ for k in range(price.size):
     vol_mkt.append(vol)
     print("market vol = ", vol, "niter = ", opt_res.iterations)
 
+print('mkt vol = ', vol_mkt)
 # do calibration
 qgy = IICapFloorQgy()
 year_index = 1

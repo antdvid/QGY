@@ -10,6 +10,9 @@ def generate_sigma_test_data():
     Sigma_test = 0.01 * np.array([0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5])
     sin_v_test = np.ones(Sigma_test.size) * 0.8
     sin_rho_test = np.ones(Sigma_test.size) * 0
+    # Sigma_test = np.array([0.005])
+    # sin_v_test = np.array([0.8])
+    # sin_rho_test = np.array([0])
 
 def generate_sinv_test_data():
     global Sigma_test
@@ -43,6 +46,7 @@ case_name_map = {0: '$\Sigma_{T_k}$',
                  2: r'$\sin \rho_{T_k}$'}
 
 strikes = 0.01 * np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7])
+#strikes = np.array([-0.02])
 R_Tk_y = 0.0
 rho_n_y1 = -0.1
 
@@ -59,7 +63,8 @@ for i in range(0, num_test):
         price = caplet_pricer.price_caplet_floorlet_by_qgy(year_index, caplet_pricer.Tk[year_index], stk, P_0T, True)
         opt_res = vol_surface.find_yoy_vol_from_fwd_caplet_price(price/P_0T, year_index, stk)
         smile.append(opt_res[0])
-        #print("     calibration_err = ", opt_res.fun)
+        print(opt_res[0], ' ', end='')
+    print('')
     legend_string = '{} = {:2.1f}%'.format(case_name_map[case], case_var_map[case][i] * 100)
     print(legend_string)
     plt.plot(strikes, smile, 'o-', label=legend_string)

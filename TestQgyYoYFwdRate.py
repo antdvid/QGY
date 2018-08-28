@@ -14,6 +14,7 @@ for R in R_Tk:
     qgy.fill_spherical_parameters(Sigma_Tk_y, v_Tk_y, rho_Tk_y, rho_t_ny1, R)
     y_tT = qgy.price_yoy_infln_fwd()
     plt.plot(qgy.Tk[1:], y_tT[1:] * 100, 'o-', label="R = {}%".format(R * 100))
+    print(y_tT[-1])
 
 ax = plt.subplot(111)
 plt.plot(qgy.Tk[1:], 100 * (qgy.I0_Tk[1:]/qgy.I0_Tk[:-1] - 1), 'r-o', label='Naive forward')
