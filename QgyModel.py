@@ -97,16 +97,16 @@ class QgyModel:
         self.K_Tk_y = np.sqrt(np.square(self.sinV_Tk_y * self.sinRho_Tk_y) + 1)
 
     def phi_y(self, i):
-        return np.asmatrix([0, self.phi_Tk_y1[i], 0])
+        return np.asmatrix([0, self.phi_Tk_y1[i], 0]).T
 
     def phi_y_at(self, t):
-        return np.asmatrix([0, self.phi_Tk_y1_intrp(t), 0])
+        return np.asmatrix([0, self.phi_Tk_y1_intrp(t), 0]).T
 
     def phi_n(self, i):
-        return np.asmatrix([self.phi_Tk_n1[i], 0, 0])
+        return np.asmatrix([self.phi_Tk_n1[i], 0, 0]).T
 
     def phi_n_at(self, t):
-        return np.asmatrix([self.phi_Tk_n1_intrp(t), 0, 0])
+        return np.asmatrix([self.phi_Tk_n1_intrp(t), 0, 0]).T
 
     def psi_n(self):
         return np.zeros([self.dim, self.dim])
@@ -141,8 +141,8 @@ class QgyModel:
                 M = self.M_tT(H1, G)
                 E_prod *= self.E_tT(H0, M, G)
 
-                Theta0 = M.dot(H0.T).T
-                Theta1 = M.dot(H1).T
+                Theta0 = M.dot(H0)
+                Theta1 = M.dot(H1)
                 H0 = Theta0 + self.phi_y(i-1)
                 H1 = Theta1 + self.psi_y(i-1)
 
@@ -215,7 +215,7 @@ class QgyModel:
         return self.E_tT(phi, M, G)
 
     def E_tT(self, phi, M, G):
-        ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * phi.dot(G.dot(M).dot(phi.T)))
+        ans = np.power(np.linalg.det(M), 0.5) * np.exp(0.5 * phi.T.dot(G.dot(M).dot(phi)))
         return ans
 
     def M_tT(self, psi, G):
@@ -281,8 +281,8 @@ class QgyModel:
 
         G = self.G_tT(k,k,T)
         M = self.M_tT(self.psi_n_at(T), G)
-        H0 = M.dot(self.phi_n_at(T).T).T + self.phi_y(k)
-        H1 = M.dot(self.psi_n_at(T).T).T + self.psi_y(k)
+        H0 = M.dot(self.phi_n_at(T)) + self.phi_y(k)
+        H1 = M.dot(self.psi_n_at(T)) + self.psi_y(k)
 
         for i in range(k, h+1, -1):
             res *= self.E_tT_simple(i-1, i, H0, H1)
@@ -290,8 +290,8 @@ class QgyModel:
             # update H0, H1
             G = self.G_tT(i - 1, i)
             M = self.M_tT(H1, G)
-            H0 = M.dot(H0.T).T + self.phi_y(i-1)
-            H1 = M.dot(H1.T).T + self.psi_y(i-1)
+            H0 = M.dot(H0) + self.phi_y(i-1)
+            H1 = M.dot(H1) + self.psi_y(i-1)
 
         res *= self.E_tT_simple(0, h+1, H0, H1)
 
@@ -324,6 +324,19 @@ class QgyModel:
         Y_0T_fit = 1 + yoy_infln_fwd[1:] + a_fit * np.log(Tk[1:])
         I_0T_fit = np.concatenate([[1], self.Yt_to_It(Y_0T_fit)])
         return I_0T_fit
+
+    @staticmethod
+    def transform_G(G_Tk, Psi, dim = 3):
+        return G_Tk.dot(np.linalg.inv(np.eye(dim) + Psi.dot(G_Tk)))
+
+    @staticmethod
+    def transform_G_sqrt(G_Tk_sqrt, Psi, dim = 3):
+        one_plus_Gsqrt_Psi_Gsqrt = np.eye(dim) + G_Tk_sqrt.T.dot(Psi).dot(G_Tk_sqrt)
+        return G_Tk_sqrt.dot(np.linalg.cholesky(np.linalg.inv(one_plus_Gsqrt_Psi_Gsqrt)))
+
+    @staticmethod
+    def transform_x_t(x_t, G_orig, G_new, Phi):
+        return G_new.dot(np.linalg.inv(G_orig).dot(x_t) - Phi)
 
     @staticmethod
     def pad_before_array(num, v):
@@ -361,6 +374,10 @@ class QgyModel:
     @staticmethod
     def is_symmetric(a, tol=1e-8):
         return np.allclose(a, a.T, atol=tol)
+
+    @staticmethod
+    def Xt(xt, Phi, Psi):
+        return np.exp(-Phi.T.dot(xt) - 0.5 * xt.T.dot(Psi.dot(xt)))
 
 
 if __name__ == "__main__":
