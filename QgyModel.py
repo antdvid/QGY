@@ -23,7 +23,7 @@ class QgyModel:
              121.4, 121.5, 121.7, 121.8, 121.6, 121.8, 121.9, 122.1, 122.3, 122.6, 123.0, 123.4, 123.8, 124.2])
         self.n = self.R_Tk_y.size
 
-        self.n_per_year = 100
+        self.n_per_year = 12
         self.rho_n_y1 = -0.1
 
         # n+1 points to deal with n and n-1 and align with Tk
@@ -59,7 +59,7 @@ class QgyModel:
 
     def compute_sigma_Tk(self):
         self.sigma = np.exp(self.R_Tk_y * self.Tk)
-        self.sigma[0] = 1
+        self.sigma[0] = np.nan
 
     def computeG_Tk_y(self):
         # integrate (sigma)^2 from 0 to t
@@ -150,31 +150,31 @@ class QgyModel:
             A_exp_prod = E_0Tk / E_prod
 
     def generate_terms_structure(self):
-        self.sigma[0] = 1
-        sigma2 = np.repeat(self.sigma, self.n_per_year)
-        sigma_n = np.repeat(1, self.n_per_year * self.n)
+        # volatlity is backward filling, so the total number is self.n_per_year * (self.n - 1)
+        sigma2 = np.repeat(self.sigma[1:], self.n_per_year)
+        sigma_n = np.repeat(1, self.n_per_year * (self.n - 1))
 
-        [x_n, x_y1] = self.generate_two_correlated_gauss(sigma_n, sigma2, self.rho_n_y1, self.n * self.n_per_year, 1/self.n_per_year)
-        x_y2 = self.generate_one_gauss(sigma2, self.n * self.n_per_year, 1/self.n_per_year)
+        [x_n, x_y1] = self.generate_two_correlated_gauss(sigma_n, sigma2, self.rho_n_y1, (self.n-1) * self.n_per_year, 1/self.n_per_year)
+        x_y2 = self.generate_one_gauss(sigma2, (self.n-1) * self.n_per_year, 1/self.n_per_year)
 
         x_Tk_y1 = x_y1[::self.n_per_year]
         x_Tk_y2 = x_y2[::self.n_per_year]
 
         self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_Tk[1:] - (self.phi_Tk_y1[1:]
-                                                                              + 0.5 * self.psi_Tk_y1[1:] * x_Tk_y1[1:]
-                                                                              + self.psi_Tk_y1y2[1:] * x_Tk_y2[1:]) * x_Tk_y1[1:])
-        Y_0 = self.I0_Tk[1]/self.I0_Tk[0]
+                                                                              + 0.5 * self.psi_Tk_y1[1:] * x_Tk_y1
+                                                                              + self.psi_Tk_y1y2[1:] * x_Tk_y2) * x_Tk_y1)
+        Y_0 = np.nan
         self.Y_Tk = np.insert(self.Y_Tk, 0, Y_0)
 
         # TODO: here we ignore t belongs [0, 1), since we don't have extrapolation yet
-        self.t = np.linspace(self.Tk[0], self.Tk[-1], self.n * self.n_per_year)
-        P0t = self.P_0T(self.t)
-        phi_t_n1 = np.repeat(self.phi_Tk_n1, self.n_per_year)
-        G_t_n = self.t
-        self.D_t = P0t * np.exp(-phi_t_n1 * x_n - 0.5 * np.square(phi_t_n1) * G_t_n)
+        x_n_Tk = x_n[::self.n_per_year]
+        x_n_Tk = np.insert(x_n_Tk, 0, 0)
+        P0t = self.P_0T(self.Tk)
+        self.D_t = P0t * np.exp(-self.phi_Tk_n1 * x_n_Tk - 0.5 * np.square(self.phi_Tk_n1) * self.Tk)
+        self.D_t[0] = 1
 
     def P_0T(self, t):
-        r = 0.02
+        r = 0.002
         return np.exp(-r * t)
 
     def initialize(self):
@@ -344,11 +344,12 @@ class QgyModel:
 
     @staticmethod
     def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt):
-        dw1 = norm.rvs(size=n, scale=dt)
-        dw2 = norm.rvs(size=n, scale=dt)
+        dw1 = norm.rvs(size=n)
+        dw2 = norm.rvs(size=n)
+        sqrt_dt = np.sqrt(dt)
 
-        dx1 = dw1 * sigma1
-        dx2 = dw1 * sigma2 * rho + dw2 * np.sqrt(1 - rho * rho) * sigma2
+        dx1 = dw1 * sigma1 * sqrt_dt
+        dx2 = dw1 * sigma2 * sqrt_dt * rho + dw2 * np.sqrt(1 - rho * rho) * sigma2 * sqrt_dt
 
         x1 = np.cumsum(dx1, axis=-1)
         x2 = np.cumsum(dx2, axis=-1)
@@ -357,8 +358,8 @@ class QgyModel:
 
     @staticmethod
     def generate_one_gauss(sigma, n, dt):
-        dw = norm.rvs(size=n, scale=dt)
-        dx = dw * sigma
+        dw = norm.rvs(size=n)
+        dx = dw * sigma * np.sqrt(dt)
         x = np.cumsum(dx, axis=-1)
         return x
 

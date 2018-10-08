@@ -41,9 +41,10 @@ class IICapFloorQgy(QgyModel):
         ND2 = self.compute_Nd(G_sqrt_2, Phi_Tk_y, Psi_Tk_y, L_Tk, K, x_t_2)
 
         swaplet_pricer = IISwapQGY()
-        #E0_DY = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T)
-        E0_DY = self.compute_discount_YTk(k, Phi_Tk_y, Psi_Tk_y, G_Tk_1, P_0T)
-        E0_DY = np.asscalar(E0_DY)
+        E0_DY = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T)
+        #E0_DY = swaplet_pricer.price_yoy_swaplet_by_qgy_2(k, T, P_0T)
+        #E0_DY = self.compute_discount_YTk(k, Phi_Tk_y, Psi_Tk_y, G_Tk_1, P_0T)
+        #E0_DY = np.asscalar(E0_DY)
 
         if is_caplet:
             ans = E0_DY * ND2 - K * P_0T * ND1
@@ -87,12 +88,10 @@ class IICapFloorQgy(QgyModel):
 
 if __name__ == "__main__":
     K_cap = 0.05
-    K_floor = 0.05
+    K_floor = 0.0
     pricer = IICapFloorQgy()
-    swaplet_pricer = IISwapQGY()
     cap_price = []
     floor_price = []
-    swaplet_price = []
     for k in range(1, pricer.Tk.size):
         T = pricer.Tk[k]
         P_0T = np.exp(-0.01 * T)
@@ -102,16 +101,10 @@ if __name__ == "__main__":
         price = pricer.price_caplet_floorlet_by_qgy(k, T, K_floor, P_0T, False)
         floor_price.append(price)
 
-        price = swaplet_pricer.price_swaplet_by_qgy(k-1, k, T, P_0T) - (1 + K_cap) * P_0T
-        swaplet_price.append(price)
 
     print(len(cap_price))
     plt.plot(pricer.Tk[1:], cap_price, 'o-', label='caplet')
     plt.plot(pricer.Tk[1:], floor_price, 'o-', label='floorlet')
-    plt.plot(pricer.Tk[1:], swaplet_price, 'o-', label='swaplet')
-    err =  pricer.verify_cap_floor_swap(cap_price, floor_price, swaplet_price)
-    plt.plot(pricer.Tk[1:], err, '--', label='caplet - swaplet - floorlet')
-    print("error = ", np.linalg.norm(err, 2))
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                fancybox=True, shadow=True, ncol=5)
     plt.show()
