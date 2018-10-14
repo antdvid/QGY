@@ -10,17 +10,13 @@ class QgyModel:
         # the ghost number should not be used!!!
         self.dim = 3
         self.Sigma_Tk_y = 0.01 * np.array(
-            [np.nan, 1.80, 2.72, 3.39, 3.84, 4.16, 4.43, 4.57, 4.48, 4.64, 4.66, 4.63, 4.61, 4.61, 4.60, 4.58, 4.58, 4.54,
-             4.51, 4.43, 4.38, 4.46, 4.47, 4.47, 4.46, 4.45, 4.60, 4.56, 4.56, 4.57, 4.60])
+            [np.nan, 1.80, 2.72, 3.39, 3.84, 4.16, 4.43, 4.57, 4.48, 4.64, 4.66, 4.63, 4.61, 4.61, 4.60, 4.58, 4.58, 4.54, 4.51, 4.43, 4.38, 4.46, 4.47, 4.47, 4.46, 4.45, 4.60, 4.56, 4.56, 4.57, 4.60])
         self.sinV_Tk_y = 0.01 * np.array(
-            [np.nan, 64.9, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0,
-             80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0])
+            [np.nan, 64.9, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0])
         self.sinRho_Tk_y = -0.01 * np.array(
-            [np.nan, 11.7, 15.4, 21.3, 25.5, 32.9, 36.2, 39.5, 41.1, 47.0, 49.7, 53.1, 55.2, 57.7, 59.6, 61.9, 64.7, 65.4,
-             65.7, 65.0, 64.9, 62.6, 62.2, 62.6, 63.2, 63.6, 68.7, 69.0, 69.6, 70.5, 74.0])
+            [np.nan, 11.7, 15.4, 21.3, 25.5, 32.9, 36.2, 39.5, 41.1, 47.0, 49.7, 53.1, 55.2, 57.7, 59.6, 61.9, 64.7, 65.4, 65.7, 65.0, 64.9, 62.6, 62.2, 62.6, 63.2, 63.6, 68.7, 69.0, 69.6, 70.5, 74.0])
         self.R_Tk_y = 0.01 * np.array(
-            [np.nan, 0.0, 59.2, 76.7, 89.5, 97.8, 104.4, 109.2, 112.2, 114.7, 116.7, 117.9, 119.1, 119.7, 120.5, 121.0, 121.0,
-             121.4, 121.5, 121.7, 121.8, 121.6, 121.8, 121.9, 122.1, 122.3, 122.6, 123.0, 123.4, 123.8, 124.2])
+            [np.nan, 0.0, 59.2, 76.7, 89.5, 97.8, 104.4, 109.2, 112.2, 114.7, 116.7, 117.9, 119.1, 119.7, 120.5, 121.0, 121.0, 121.4, 121.5, 121.7, 121.8, 121.6, 121.8, 121.9, 122.1, 122.3, 122.6, 123.0, 123.4, 123.8, 124.2])
         self.n = self.R_Tk_y.size
 
         self.n_per_year = 12
@@ -166,7 +162,6 @@ class QgyModel:
         Y_0 = np.nan
         self.Y_Tk = np.insert(self.Y_Tk, 0, Y_0)
 
-        # TODO: here we ignore t belongs [0, 1), since we don't have extrapolation yet
         x_n_Tk = x_n[::self.n_per_year]
         x_n_Tk = np.insert(x_n_Tk, 0, 0)
         P0t = self.P_0T(self.Tk)
@@ -260,6 +255,34 @@ class QgyModel:
         self.R_Tk_y[k] = R_y
         self.initialize()
 
+    def set_sin_parameters_at(self, k, Sigma, sin_v_y, sin_rho_y, rho_ny1, R_y):
+        self.Sigma_Tk_y[k] = Sigma
+        self.sinV_Tk_y[k] = sin_v_y
+        self.sinRho_Tk_y[k] = sin_rho_y
+        self.rho_n_y1 = rho_ny1
+        self.R_Tk_y[k] = R_y
+        self.initialize()
+
+    def set_qgy_parameters_at(self, k, phi_Tk_y1, psi_Tk_y1, psi_Tk_y1y2, R_Tk_y):
+        self.phi_Tk_y1[k] = phi_Tk_y1
+        self.psi_Tk_y1[k] = psi_Tk_y1
+        self.psi_Tk_y1y2[k] = psi_Tk_y1y2
+        self.R_Tk_y[k] = R_Tk_y
+        self.computeATk()
+        self.generate_interpolation()
+
+    def set_normalized_qgy_parameters_at(self, k, phi_Tk_y1, psi_Tk_y1, psi_Tk_y1y2, R_Tk_y):
+        self.R_Tk_y[k] = R_Tk_y
+        self.computeG_Tk_ny()
+        self.computeG_Tk_y()
+
+        self.phi_Tk_y1[k] = -phi_Tk_y1/np.sqrt(self.G_Tk_y1[k])
+        self.psi_Tk_y1[k] = -2.0 * psi_Tk_y1/self.G_Tk_y1[k]
+        self.psi_Tk_y1y2[k] = -psi_Tk_y1y2/np.sqrt(self.G_Tk_y1[k] * self.G_Tk_y2[k])
+
+        self.computeATk()
+        self.generate_interpolation()
+
     def print_debug(self):
         print("phi_tk_y1 = ", self.phi_Tk_y1)
         print("psi_tk_y1_y2 = ", self.psi_Tk_y1y2)
@@ -312,8 +335,7 @@ class QgyModel:
     def fit_yoy_convexity_correction(self, I0_Tk):
         yoy_infln_fwd = self.price_yoy_infln_fwd()
         Tk = self.Tk
-        #Y0_Tk = I0_Tk[1:]/I0_Tk[:-1]
-        #plt.plot(Tk[1:], yoy_infln_fwd[1:] - (Y0_Tk - 1), 'o')
+
         def target(a):
             Y_0T_fit = yoy_infln_fwd[1:] + 1 + a * np.log(Tk[1:])
             I_0T_fit = self.Yt_to_It(Y_0T_fit)
@@ -322,6 +344,7 @@ class QgyModel:
 
         a_fit = minimize(target, x0=np.array([0]), method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
         Y_0T_fit = 1 + yoy_infln_fwd[1:] + a_fit * np.log(Tk[1:])
+        print("a fit = ", a_fit)
         I_0T_fit = np.concatenate([[1], self.Yt_to_It(Y_0T_fit)])
         return I_0T_fit
 

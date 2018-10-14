@@ -2,23 +2,35 @@ from QgyModel import *
 
 
 class LpiSwapQgy(QgyModel):
-    def price_yoy_lpi_swap_by_qgy(self, floor, cap, lpi0):
-        N = 200
-        price = 0
-        for i in range(N):
-            self.generate_terms_structure()
-            t = self.t
-            Dt = self.D_t
-            Tk = self.Tk
-            Y_Tk = self.Y_Tk
-            P_Tk = self.generate_yoy_lpi_price(Y_Tk, floor, cap, lpi0)
-            S_Tk = self.generate_lpi_swap_rate(self.Tk, P_Tk, self.I0_Tk)
-            plt.plot(Tk, P_Tk * 100)
-            plt.xlabel('Maturity')
-            plt.ylabel('LPI [%]')
-        plt.show()
+    def __init__(self):
+        QgyModel.__init__(self)
+        self.NumIters = 100
 
-    def generate_yoy_lpi_price(self, Y_Tk, floor, cap, lpi0):
+    def price_lpi_by_qgy(self, indx, floor, cap, lpi0):
+        price = 0
+        np.random.seed(seed=12345)
+        for i in range(self.NumIters):
+            self.generate_terms_structure()
+            Dt = self.D_t
+            Y_Tk = self.Y_Tk
+            P_Tk = self.generate_nodiscount_lpi_price(Y_Tk, floor, cap, lpi0)
+            price += P_Tk[indx] * Dt[indx]/Dt[0]
+        price /= self.NumIters
+        return price
+
+    def generate_discount_lpi_price(self, floor, cap, lpi0):
+        price = np.zeros(len(self.Tk))
+        np.random.seed(seed=12345)
+        for i in range(self.NumIters):
+            self.generate_terms_structure()
+            Dt = self.D_t
+            Y_Tk = self.Y_Tk
+            P_Tk = self.generate_nodiscount_lpi_price(Y_Tk, floor, cap, lpi0)
+            price += P_Tk * Dt/Dt[0]
+        price /= self.NumIters
+        return price
+
+    def generate_nodiscount_lpi_price(self, Y_Tk, floor, cap, lpi0):
         n = self.Y_Tk.size
         P = np.empty(n)
         P[0] = lpi0
@@ -35,6 +47,7 @@ class LpiSwapQgy(QgyModel):
 
 if __name__ == '__main__':
     pricer = LpiSwapQgy()
-    pricer.price_yoy_lpi_swap_by_qgy(0.00, 0.05, 231.0)
+    price = pricer.price_lpi_by_qgy(30, 0.00, 0.05, 231.0)
+    print("price = ", price)
     #pricer.price_yoy_lpi_swap_by_qgy(0.00, 100)
 
