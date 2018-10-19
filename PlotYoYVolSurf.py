@@ -1,17 +1,27 @@
 from QgyCapFloorPricer import *
 from QgyVolSurface import *
+from scipy.signal import *
 
+
+def smooth_params(params):
+    win_len = 9
+    poly_order = 3
+    ret = np.zeros(params.shape)
+    for i in range(params.shape[1]):
+        param_smooth = savgol_filter(params[:, i], win_len, poly_order)
+        ret[:, i] = param_smooth
+    return ret
 
 # import data
 params = np.loadtxt('./LpiCalibrationParams.txt')
 #params = np.loadtxt('./CapletCalibrationParams.txt')
+params = smooth_params(params)
 print(params.shape)
-qgy = IICapFloorQgy()
-Ry = 1.2
+qgy = QgyCapFloor()
 rhoNY1 = -0.1
 # fill in parameters
-for i in range(1, len(params)):
-     qgy.set_sin_parameters_at(i+1, params[i][0], params[i][1], params[i][2], rhoNY1, Ry)
+for i in range(0, len(params)):
+     qgy.set_sin_parameters_at(i+1, params[i][0], params[i][1], params[i][2], rhoNY1, params[i][3])
 
 # plot vol surface
 strikes = 0.01 * np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7])

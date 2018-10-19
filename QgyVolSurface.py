@@ -40,6 +40,19 @@ class QgyVolSurface():
         opt_res = opt.brentq(target, -1, 1, full_output=True)
         return opt_res
 
+    def find_volatility_surface(self, strikes, qgy):
+        maturity = qgy.Tk
+        v_surf = np.zeros([maturity.size - 1, strikes.size])
+
+        for k in range(1, maturity.size):
+            P_0T = qgy.P_0T(maturity[k])
+            print(k)
+            for j in range(strikes.size):
+                price = qgy.price_caplet_floorlet_by_qgy(k, maturity[k], strikes[j], P_0T, True)
+                vol_res = self.find_yoy_vol_from_fwd_caplet_price(price / P_0T, k, strikes[j])
+                v_surf[k - 1][j] = vol_res[0]
+        return v_surf
+
 
 if __name__ == "__main__":
     Tk = np.array(

@@ -35,7 +35,7 @@ lpi05 = dict(zip(tenor, lpi05))
 lpi0i = dict(zip(tenor, lpi0i))
 lpi35 = dict(zip(tenor, lpi35))
 
-test_case = 2     #change this to test Sigma, sinv, sinrho, R
+test_case = 1     #change this to test Sigma, sinv, sinrho, R
 range = [[0, 1], [0, 1], [-1, 1], [1, 1.5]]
 #lpi_quote = [0.0, 1000, lpi0i] #change this to test different lpi
 lpi_quote = [0.0, 1000, lpi0i]

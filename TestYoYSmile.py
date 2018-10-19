@@ -51,7 +51,7 @@ R_Tk_y = 0.0
 rho_n_y1 = -0.1
 
 ax = plt.subplot(111)
-caplet_pricer = IICapFloorQgy()
+caplet_pricer = QgyCapFloor()
 vol_surface = QgyVolSurface(caplet_pricer.Tk, caplet_pricer.I0_Tk)
 num_test = Sigma_test.size
 year_index = 1

@@ -17,7 +17,11 @@ for i in range(0, N):
     x_y2 = qgy.generate_one_gauss(sigma2, qgy.n * qgy.n_per_year, 1 / qgy.n_per_year)
     x_Tk_y1 = x_y1[::qgy.n_per_year]
     x_Tk_y2 = x_y2[::qgy.n_per_year]
-    plt.plot(t, x_y1, 'b')
+    plt.subplot(1,3,1)
     plt.plot(t, x_n, 'r')
+    plt.subplot(1,3,2)
+    plt.plot(t, x_y1, 'b')
+    plt.subplot(1,3,3)
+    plt.plot(t, x_y2, 'g')
 
 plt.show()

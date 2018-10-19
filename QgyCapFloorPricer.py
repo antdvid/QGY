@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sp
 
 
-class IICapFloorQgy(QgyModel):
+class QgyCapFloor(QgyModel):
     def __init__(self):
         QgyModel.__init__(self)
         self.tol = 1e-10
@@ -89,7 +89,7 @@ class IICapFloorQgy(QgyModel):
 if __name__ == "__main__":
     K_cap = 0.05
     K_floor = 0.0
-    pricer = IICapFloorQgy()
+    pricer = QgyCapFloor()
     cap_price = []
     floor_price = []
     for k in range(1, pricer.Tk.size):

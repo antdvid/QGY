@@ -3,7 +3,7 @@ import numpy as np
 import scipy as sp
 
 
-class NominalCapFloor(IICapFloorQgy):
+class NominalCapFloorCapFloor(QgyCapFloor):
     def __init__(self):
         QgyModel.__init__(self)
         self.tol = 1e-10
@@ -65,7 +65,7 @@ class NominalCapFloor(IICapFloorQgy):
         return res
 
 if __name__ == "__main__":
-        pricer = NominalCapFloor()
+        pricer = NominalCapFloorCapFloor()
         T = 30
         r = 0.01
         N = 1

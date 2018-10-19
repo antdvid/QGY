@@ -1,20 +1,14 @@
 from QgyLpiSwap import *
 
 
-#params = np.loadtxt('./LpiCalibrationParams.txt')
-params = np.loadtxt('./CapletCalibrationParams.txt')
+params = np.loadtxt('./LpiCalibrationParams.txt')
+#params = np.loadtxt('./CapletCalibrationParams.txt')
 print(params.shape)
 qgy = LpiSwapQgy()
-Ry = 1.2
 rhoNY1 = -0.1
 # fill in parameters
 for i in range(1, len(params)):
-    if len(params[i]) == 4:
-        Ry = 1.2
-    else:
-        Ry = params[i][3]
-
-    qgy.set_sin_parameters_at(i+1, params[i][0], params[i][1], params[i][2], rhoNY1, Ry)
+    qgy.set_sin_parameters_at(i+1, params[i][0], params[i][1], params[i][2], rhoNY1, params[i][3])
 
 
 # set lpi market data
@@ -40,7 +34,8 @@ lpi0i = dict(zip(tenor, lpi0i))
 lpi35 = dict(zip(tenor, lpi35))
 
 lpi0 = 1
-lpi_quotes = [[0.0, 0.03, lpi03, '(0%, 3%)'], [0.0, 0.05, lpi05, '(0%, 5%)'], [0.0, 100, lpi0i, '(0%, inf)'], [0.03, 0.05, lpi35, '(3%, 5%)']]
+#lpi_quotes = [[0.0, 0.03, lpi03, '(0%, 3%)'], [0.0, 0.05, lpi05, '(0%, 5%)'], [0.0, 100, lpi0i, '(0%, inf)'], [0.03, 0.05, lpi35, '(3%, 5%)']]
+lpi_quotes = [[0.0, 0.03, lpi03, '(0%, 3%)'], [0.0, 0.05, lpi05, '(0%, 5%)'], [0.0, 100, lpi0i, '(0%, inf)']]
 color = ['r', 'g', 'b', 'k']
 # pricing
 count = 0

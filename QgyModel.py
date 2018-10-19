@@ -145,6 +145,11 @@ class QgyModel:
             self.A_Tk[k] = np.log(E_0Tk / E_prod / A_exp_prod)
             A_exp_prod = E_0Tk / E_prod
 
+    def generate_yoy_structure_from_drivers(self, x_Tk_y1, x_Tk_y2):
+        print("ITk/ITk-1 = ", self.I0_Tk[1:]/self.I0_Tk[0:-1])
+        exponent = self.A_Tk[1:] - (self.phi_Tk_y1[1:] + 0.5 * self.psi_Tk_y1[1:] * x_Tk_y1 + self.psi_Tk_y1y2[1:] * x_Tk_y2) * x_Tk_y1
+        print("exponent = ", exponent)
+        return self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(exponent)
     def generate_terms_structure(self):
         # volatlity is backward filling, so the total number is self.n_per_year * (self.n - 1)
         sigma2 = np.repeat(self.sigma[1:], self.n_per_year)
@@ -156,9 +161,15 @@ class QgyModel:
         x_Tk_y1 = x_y1[::self.n_per_year]
         x_Tk_y2 = x_y2[::self.n_per_year]
 
-        self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_Tk[1:] - (self.phi_Tk_y1[1:]
-                                                                              + 0.5 * self.psi_Tk_y1[1:] * x_Tk_y1
-                                                                              + self.psi_Tk_y1y2[1:] * x_Tk_y2) * x_Tk_y1)
+        # self.Y_Tk = self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(self.A_Tk[1:] - (self.phi_Tk_y1[1:]
+        #                                                                       + 0.5 * self.psi_Tk_y1[1:] * x_Tk_y1
+        #                                                                       + self.psi_Tk_y1y2[1:] * x_Tk_y2) * x_Tk_y1)
+        self.Y_Tk = self.generate_yoy_structure_from_drivers(x_Tk_y1, x_Tk_y2)
+
+        for i in range(len(self.Y_Tk)):
+            if self.Y_Tk[i] > 1.08:
+                print(self.I0_Tk[i]/self.I0_Tk[i-1], self.A_Tk[i], x_Tk_y1[i], x_Tk_y2[i], self.phi_Tk_y1[i], self.psi_Tk_y1[i], self.psi_Tk_y1y2[i])
+
         Y_0 = np.nan
         self.Y_Tk = np.insert(self.Y_Tk, 0, Y_0)
 
@@ -411,11 +422,11 @@ if __name__ == "__main__":
     for i in range(50):
         qgy.generate_terms_structure()
         plt.subplot(1, 2, 1)
-        plt.plot(qgy.Tk, qgy.Y_Tk)
+        plt.plot(qgy.Tk, qgy.Y_Tk, 'g-')
         plt.xlabel('Maturity')
         plt.ylabel('YoY inflation ratio')
         plt.subplot(1, 2, 2)
-        plt.plot(qgy.t, qgy.D_t)
+        plt.plot(qgy.Tk, qgy.D_t, 'g-')
         plt.xlabel('Maturity')
         plt.ylabel('Inverse numeraire')
     plt.show()

@@ -42,7 +42,7 @@ for k in range(price.size):
 
 print('mkt vol = ', vol_mkt)
 # do calibration
-qgy = IICapFloorQgy()
+qgy = QgyCapFloor()
 year_index = 1
 x0 = np.array([0.01, 0.6, -0.1, 0.5])
 bnds = ((None, None), (0, np.pi/2), (-np.pi/2, np.pi/2), (0, None))

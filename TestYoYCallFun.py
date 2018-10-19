@@ -2,7 +2,7 @@ import numpy as np
 from QgyCapFloorPricer import *
 
 
-qgy = IICapFloorQgy()
+qgy = QgyCapFloor()
 k = 1
 T = 1.0
 Sigma = 1.01

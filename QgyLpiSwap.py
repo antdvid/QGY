@@ -8,7 +8,7 @@ class LpiSwapQgy(QgyModel):
 
     def price_lpi_by_qgy(self, indx, floor, cap, lpi0):
         price = 0
-        np.random.seed(seed=12345)
+        np.random.seed(seed=77477)
         for i in range(self.NumIters):
             self.generate_terms_structure()
             Dt = self.D_t
@@ -20,7 +20,7 @@ class LpiSwapQgy(QgyModel):
 
     def generate_discount_lpi_price(self, floor, cap, lpi0):
         price = np.zeros(len(self.Tk))
-        np.random.seed(seed=12345)
+        np.random.seed(seed=77477)
         for i in range(self.NumIters):
             self.generate_terms_structure()
             Dt = self.D_t
