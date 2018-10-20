@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 tenors_intrp = np.linspace(0, 30, 31)
 qgy_pricer = LpiSwapQgy()
 P0t = qgy_pricer.P_0T(qgy_pricer.Tk)
-cap = 0.03
+cap = 0.05
 floor = 0.0
 N = 400
 price = 0
@@ -41,6 +41,8 @@ for i in range(N):
     yoy_res += Y_Tk
     lpiTk_mean += lpiTk * D_Tk/D_Tk[0]
 
+print("x1_limit = ", qgy_pricer.x1min, ", ", qgy_pricer.x1max)
+print("x2_limit = ", qgy_pricer.x2min, ", ", qgy_pricer.x2max)
 annual_return /= N
 swap_rate_res /= N
 yoy_res /= N

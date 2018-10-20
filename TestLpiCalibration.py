@@ -75,7 +75,7 @@ lpi05 = dict(zip(tenor, lpi05))
 lpi0i = dict(zip(tenor, lpi0i))
 lpi35 = dict(zip(tenor, lpi35))
 
-lpi_quotes = [[0.0, 0.03, lpi03, '(0%, 3%)'], [0.0, 0.05, lpi05, '(0%, 5%)'], [0.0, 100, lpi0i, '(0%, inf)']]#, [0.03, 0.05, lpi35, '(3%, 5%)']]
+lpi_quotes = [[0.0, 0.03, lpi03, '(0%, 3%)'], [0.0, 0.05, lpi05, '(0%, 5%)'], [0.0, 100, lpi0i, '(0%, inf)'], [0.03, 0.05, lpi35, '(3%, 5%)']]
 #lpi_quotes = [[0.03, 0.05, lpi35, '[3%, 5%]']]
 color = ['r', 'g', 'b', 'k']
 rho_n_y1 = -0.1
@@ -84,7 +84,7 @@ tol = 1e-6
 x0 = [0.01, 0.5, -0.5, 0.8]
 #x0 = [0.01, 0.5, -0.5]
 R_Y = 1.2
-bnds = [[0.0, 0.1], [0, 0.8], [-1, 1], [0, 10.0]]
+bnds = [[0.0, 0.1], [0.4, 0.8], [-0.8, 0.1], [0, 10.0]]
 #bnds = [[0.0, 0.1], [0, 0.8], [-1, 1]]
 opt_bnds = opt.Bounds([a[0] for a in bnds], [a[1] for a in bnds])
 lpi0 = 1
@@ -94,6 +94,11 @@ for current_year in tenor:
         break
     start_time = time.time()
     opt_res = opt.minimize(target_func, x0=x0, bounds=opt_bnds, method='L-BFGS-B', jac=None, options={'maxiter': 50, 'maxfev': 50, 'xtol':tol, 'ftol':tol, 'gtol':tol, 'tol':tol, 'adaptive':True})
+
+    # set lower bounds for Sigma(first parameter) to make it monotonic
+    bnds[0][0] = opt_res.x[0] - 5e-4
+    opt_bnds = opt.Bounds([a[0] for a in bnds], [a[1] for a in bnds])
+
     print(opt_res)
     elapsed_time = time.time() - start_time
     x0 = opt_res.x
@@ -103,10 +108,10 @@ for current_year in tenor:
         x0[i] = max(x0[i], bnds[i][0])
         x0[i] = min(x0[i], bnds[i][1])
     if len(x0) == 3:
-        print('#{:d}\t{:5.4f}\t\t{:5.4f}\t\t{:5.4f}\t\t{:5.4f}\t\t{:2.3e}\t\t{:d}\t\t{:5.4f}s'
+        print('#{:d}\t{:7.6f}\t\t{:5.4f}\t\t{:5.4f}\t\t{:5.4f}\t\t{:2.3e}\t\t{:d}\t\t{:5.4f}s'
               .format(current_year, x0[0], x0[1], x0[2], R_Y, opt_res.fun, opt_res.nfev, elapsed_time))
     else:
-        print('#{:d}\t{:5.4f}\t\t{:5.4f}\t\t{:5.4f}\t\t{:5.4f}\t\t{:2.3e}\t\t{:d}\t\t{:5.4f}s'
+        print('#{:d}\t{:7.6f}\t\t{:7.6f}\t\t{:7.6f}\t\t{:7.6f}\t\t{:2.3e}\t\t{:d}\t\t{:5.4f}s'
               .format(current_year, x0[0], x0[1], x0[2], x0[3], opt_res.fun, opt_res.nfev, elapsed_time))
     # print("current = ", current_year, 'time cost = ', elapsed_time, 's')
 

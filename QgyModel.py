@@ -40,9 +40,14 @@ class QgyModel:
         self.phi_Tk_y1 = None
         self.phi_Tk_n1 = None
         self.A_Tk = None
-        self.sigma = None
 
         self.initialize()
+
+        #for debugging
+        self.x1min = 0
+        self.x1max = 0
+        self.x2min = 0
+        self.x2max = 0
 
     def gernate_fake_forward_inflation_index(self):
         Y_Tk = 0.01 * np.array([0.0, 2.9, 2.65, 2.9, 3.0, 3.3,
@@ -53,17 +58,53 @@ class QgyModel:
                                      3.6, 3.65, 3.68, 3.65, 3.65]) + 1
         return self.Yt_to_It(Y_Tk)
 
-    def compute_sigma_Tk(self):
-        self.sigma = np.exp(self.R_Tk_y * self.Tk)
-        self.sigma[0] = np.nan
+
+    def integrate_piecewise_expfunc(self, x, R, t, T):
+        ''' integrate function exp(R*s) from t to T '''
+        if len(x) != len(R):
+            print("Warning: len(x) is not equal to len(R)")
+            raise SyntaxError()
+
+        sum = 0
+        for i in range(1, len(x)):
+            lower = np.maximum(t, x[i-1])
+            upper = np.minimum(T, x[i])
+            if (lower >= upper):
+                continue
+            if R[i] == 0:
+                sum += upper - lower
+            else:
+                sum += (np.exp(R[i] * upper) - np.exp(R[i] * lower))/R[i]
+        return sum
 
     def computeG_Tk_y(self):
         # integrate (sigma)^2 from 0 to t
-        self.G_Tk_y1 = self.G_Tk_y2 = self.pad_before_array(0, np.cumsum(self.sigma[1:] * self.sigma[1:] * np.diff(self.Tk)))
+        self.G_Tk_y1 = self.G_Tk_y2 = []
+        for i in range(0, len(self.R_Tk_y)):
+            t = 0
+            T = self.Tk[i]
+            vol = self.integrate_piecewise_expfunc(self.Tk, self.R_Tk_y * 2, t, T)
+            self.G_Tk_y1.append(vol)
+        self.G_Tk_y1 = np.array(self.G_Tk_y1)
+        self.G_Tk_y2 = np.array(self.G_Tk_y2)
+
+        # check positive definite
+        for i in range(1, len(self.Tk)):
+            G = self.G_tT(0, i)
+            try:
+                G_sqrt = np.linalg.cholesky(G)
+            except:
+                print(G)
 
     def computeG_Tk_ny(self):
         # integrate (sigma)^2 from 0 to t
-        self.G_Tk_ny1 = self.pad_before_array(0, np.cumsum(self.rho_n_y1 * self.sigma[1:] * np.diff(self.Tk)))
+        self.G_Tk_ny1 = []
+        for i in range(0, len(self.R_Tk_y)):
+            t = 0
+            T =self.Tk[i]
+            intgVol = self.integrate_piecewise_expfunc(self.Tk, self.R_Tk_y, t, T)
+            self.G_Tk_ny1.append(self.rho_n_y1 * intgVol)
+        self.G_Tk_ny1 = np.array(self.G_Tk_ny1)
 
     def computePsi_Tk_y1y2(self):
         cosRho_Tk_y = np.sqrt(1 - np.square(self.sinRho_Tk_y))
@@ -81,7 +122,7 @@ class QgyModel:
     def computePhi_tk_y(self):
         cosV_Tk_y = np.sqrt(1 - np.square(self.sinV_Tk_y))
         phi_tilde = self.Sigma_Tk_y/self.K_Tk_y * cosV_Tk_y
-        self.phi_Tk_y1 = np.empty(self.G_Tk_y1.size)
+        self.phi_Tk_y1 = np.empty(self.Tk.size)
         self.phi_Tk_y1[0] = np.NaN
         self.phi_Tk_y1[1:] = -phi_tilde[1:]/np.sqrt(self.G_Tk_y1[1:])
 
@@ -151,14 +192,19 @@ class QgyModel:
 
     def generate_terms_structure(self):
         # volatlity is backward filling, so the total number is self.n_per_year * (self.n - 1)
-        sigma2 = np.repeat(self.sigma[1:], self.n_per_year)
+        sigma2 = []
+        dt = 1/self.n_per_year
+        for i in range(1, len(self.R_Tk_y)):
+            for j in range(self.n_per_year):
+                sigma2.append(np.exp(self.R_Tk_y[i] * (self.Tk[i-1] + dt * (j+1))))
+
         sigma_n = np.repeat(1, self.n_per_year * (self.n - 1))
 
         [x_n, x_y1] = self.generate_two_correlated_gauss(sigma_n, sigma2, self.rho_n_y1, (self.n-1) * self.n_per_year, 1/self.n_per_year)
         x_y2 = self.generate_one_gauss(sigma2, (self.n-1) * self.n_per_year, 1/self.n_per_year)
 
-        x_Tk_y1 = x_y1[::self.n_per_year]
-        x_Tk_y2 = x_y2[::self.n_per_year]
+        x_Tk_y1 = x_y1[self.n_per_year-1::self.n_per_year]
+        x_Tk_y2 = x_y2[self.n_per_year-1::self.n_per_year]
 
         self.Y_Tk = self.generate_yoy_structure_from_drivers(x_Tk_y1, x_Tk_y2)
 
@@ -178,7 +224,6 @@ class QgyModel:
     def initialize(self):
         # initialize, setup parameters
         self.computeK_Tk_y()
-        self.compute_sigma_Tk()
         self.computeG_Tk_ny()
         self.computeG_Tk_y()
         self.computePhi_tk_y()
@@ -199,7 +244,6 @@ class QgyModel:
         self.phi_Tk_y1 = None
         self.phi_Tk_n1 = None
         self.A_Tk = None
-        self.sigma = None
 
     def generate_interpolation(self):
         self.psi_Tk_y1y2_intrp = sp.interpolate.interp1d(self.Tk[1:], self.psi_Tk_y1y2[1:])
@@ -223,12 +267,20 @@ class QgyModel:
         G_tT_ny1 = self.G_Tk_ny1[k] - self.G_Tk_ny1[i]
         G_tT_y1 = self.G_Tk_y1[k] - self.G_Tk_y1[i]
 
-        T = max(T, self.Tk[k])
-        sigma = self.sigma[k]
-        G_tT_ny1 += (T - self.Tk[k]) * sigma * self.rho_n_y1
-        G_tT_y1 += (T - self.Tk[k]) * sigma * sigma
+        if T > self.Tk[k]:
+            if self.R_Tk_y[k+1] == 0:
+                G_tT_ny1 += self.rho_n_y1 * (T - self.Tk[k])
+                G_tT_y1 += T - self.Tk[k]
+            else:
+                G_tT_ny1 += self.rho_n_y1 * (np.exp(T * self.R_Tk_y[k+1]) - np.exp(self.Tk[k] * self.R_Tk_y[k+1]))/self.R_Tk_y[k+1]
+                G_tT_y1 += (np.exp(2.0 * T * self.R_Tk_y[k+1]) - np.exp(2.0 * self.Tk[k] * self.R_Tk_y[k+1]))/(2.0 * self.R_Tk_y[k+1])
 
-        return np.asmatrix([[T - self.Tk[i], G_tT_ny1, 0],
+        if T > self.Tk[k]:
+            G_tn = T - self.Tk[i]
+        else:
+            G_tn = self.Tk[k] - self.Tk[i]
+
+        return np.asmatrix([[G_tn, G_tT_ny1, 0],
                         [G_tT_ny1, G_tT_y1, 0],
                         [0, 0, G_tT_y1]])
 
@@ -370,12 +422,12 @@ class QgyModel:
 
     @staticmethod
     def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt):
-        dw1 = norm.rvs(size=n)
-        dw2 = norm.rvs(size=n)
         sqrt_dt = np.sqrt(dt)
+        dw1 = norm.rvs(size=n, scale=sqrt_dt)
+        dw2 = norm.rvs(size=n, scale=sqrt_dt)
 
-        dx1 = dw1 * sigma1 * sqrt_dt
-        dx2 = dw1 * sigma2 * sqrt_dt * rho + dw2 * np.sqrt(1 - rho * rho) * sigma2 * sqrt_dt
+        dx1 = dw1 * sigma1
+        dx2 = dw1 * sigma2 * rho + dw2 * np.sqrt(1 - rho * rho) * sigma2
 
         x1 = np.cumsum(dx1, axis=-1)
         x2 = np.cumsum(dx2, axis=-1)
@@ -384,8 +436,8 @@ class QgyModel:
 
     @staticmethod
     def generate_one_gauss(sigma, n, dt):
-        dw = norm.rvs(size=n)
-        dx = dw * sigma * np.sqrt(dt)
+        dw = norm.rvs(size=n, scale=np.sqrt(dt))
+        dx = dw * sigma
         x = np.cumsum(dx, axis=-1)
         return x
 

@@ -5,7 +5,7 @@ from scipy.signal import *
 
 def smooth_params(params):
     win_len = 9
-    poly_order = 3
+    poly_order = 2
     ret = np.zeros(params.shape)
     for i in range(params.shape[1]):
         param_smooth = savgol_filter(params[:, i], win_len, poly_order)

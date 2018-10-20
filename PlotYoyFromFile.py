@@ -49,6 +49,9 @@ for i in range(num_sim):
     plt.subplot(1,3,3)
     plt.plot(Tk, x_y2[i,:], 'g-')
 
+plt.figure(3)
+plt.hist(x_y1[:,0], 50)
+
 disc_avg /= num_sim
 yoy_avg /= num_sim
 lpi_avg /= num_sim
