@@ -211,7 +211,7 @@ class QgyModel:
         Y_0 = np.nan
         self.Y_Tk = np.insert(self.Y_Tk, 0, Y_0)
 
-        x_n_Tk = x_n[::self.n_per_year]
+        x_n_Tk = x_n[self.n_per_year-1::self.n_per_year]
         x_n_Tk = np.insert(x_n_Tk, 0, 0)
         P0t = self.P_0T(self.Tk)
         self.D_t = P0t * np.exp(-self.phi_Tk_n1 * x_n_Tk - 0.5 * np.square(self.phi_Tk_n1) * self.Tk)

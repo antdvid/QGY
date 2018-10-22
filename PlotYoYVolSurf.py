@@ -13,7 +13,7 @@ def smooth_params(params):
     return ret
 
 # import data
-params = np.loadtxt('./LpiCalibrationParams.txt')
+params = np.loadtxt('./LpiCalibrationParams3.txt')
 #params = np.loadtxt('./CapletCalibrationParams.txt')
 params = smooth_params(params)
 print(params.shape)
