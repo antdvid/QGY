@@ -31,7 +31,7 @@ def generate_sinrho_test_data():
     sin_v_test = np.ones(sin_rho_test.size) * 0.8
 
 # prepare data
-case = 2
+case = 0
 options = {0: generate_sigma_test_data,
            1: generate_sinv_test_data,
            2: generate_sinrho_test_data}

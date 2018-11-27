@@ -21,7 +21,8 @@ for i in range(N):
     D_Tk = qgy_pricer.D_t
     lpiTk = qgy_pricer.generate_nodiscount_lpi_price(Y_Tk, floor, cap, qgy_pricer.I0_Tk[0])
     swapRate = qgy_pricer.generate_lpi_swap_rate(Tk, lpiTk, qgy_pricer.I0_Tk, qgy_pricer.D_t)
-    lpiReturn = np.power(lpiTk/lpiTk[0] * D_Tk/D_Tk[0], 1/(Tk - Tk[0])) - 1.0
+    #lpiReturn = np.power(lpiTk/lpiTk[0] * D_Tk/D_Tk[0], 1/(Tk - Tk[0])) - 1.0
+    lpiReturn = np.power(lpiTk/lpiTk[0], 1/(Tk - Tk[0])) - 1.0
 
     plt.subplot(1,4,1)
     plt.plot(Tk, swapRate * 100, 'g-')
@@ -29,7 +30,7 @@ for i in range(N):
     plt.ylabel('Swap Rate [%]')
 
     plt.subplot(1,4,2)
-    plt.plot(Tk, Y_Tk, 'g-')
+    plt.plot(Tk, Y_Tk - 1, 'g-')
 
     plt.subplot(1,4,3)
     plt.plot(Tk[1:], lpiTk[1:] * D_Tk[1:], 'g-')
@@ -52,11 +53,11 @@ plt.plot([Tk[0], Tk[-1]], [0, 0], '--b')
 plt.legend()
 
 plt.subplot(1,4,2)
-plt.plot(Tk, yoy_res, 'r', label='Year on year inflation ratio')
+plt.plot(Tk, yoy_res - 1, 'r', label='Year on year inflation rate')
 # plot I_0Tk/I_0Tk-1
-plt.plot(Tk[1:], qgy_pricer.I0_Tk[1:]/qgy_pricer.I0_Tk[0:-1],'b', label="Year on year forward")
+plt.plot(Tk[1:], qgy_pricer.I0_Tk[1:]/qgy_pricer.I0_Tk[0:-1] - 1,'b', label="Year on year forward")
 plt.xlabel('Maturity')
-plt.ylabel('Year on year ratio')
+plt.ylabel('Year on year rate')
 plt.legend()
 
 plt.subplot(1,4,3)
