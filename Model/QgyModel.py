@@ -1,9 +1,10 @@
 import numpy as np
-from scipy.stats import norm
 import scipy as sp
+import random
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from sobol_seq import *
+from scipy.stats import norm
 
 class QgyModel:
     def __init__(self):
@@ -192,7 +193,7 @@ class QgyModel:
         return self.I0_Tk[1:]/self.I0_Tk[0:-1] * np.exp(exponent)
 
     def generate_terms_structure(self):
-        # volatlity is backward filling, so the total number is self.n_per_year * (self.n - 1)
+        # volatility is backward filling, so the total number is self.n_per_year * (self.n - 1)
         sigma2 = []
         dt = 1/self.n_per_year
         for i in range(1, len(self.R_Tk_y)):
@@ -441,6 +442,42 @@ class QgyModel:
         dx = dw * sigma
         x = np.cumsum(dx, axis=-1)
         return x
+
+    @staticmethod
+    def generate_one_quasi_gauss(sigma, dt, path_id, permut_matrix, sob_seq, sob_index):
+        u01 = [sob_seq[int(indx)][sob_index] for indx in permut_matrix[path_id, :]]
+        std_norm = norm.ppf(u01)
+        x = np.cumsum(std_norm * sigma * np.sqrt(dt))
+        return x
+
+    @staticmethod
+    def generate_two_correlated_quasi_gauss(sigma1, sigma2, rho, dt, path_id, permut_matrix, sob_seq, sob_index):
+        u01 = [sob_seq[int(indx)][sob_index[0]] for indx in permut_matrix[path_id, :]]
+        v01 = [sob_seq[int(indx)][sob_index[1]] for indx in permut_matrix[path_id, :]]
+        dw1 = norm.ppf(u01)
+        dw2 = norm.ppf(v01)
+
+        dx1 = dw1 * sigma1 * np.sqrt(dt)
+        dx2 = dw1 * sigma2 * rho * np.sqrt(dt) + dw2 * np.sqrt(1 - rho * rho) * sigma2 * np.sqrt(dt)
+
+        x1 = np.cumsum(dx1, axis=-1)
+        x2 = np.cumsum(dx2, axis=-1)
+
+        return [x1, x2]
+
+    @staticmethod
+    def generate_sobol_squence(num, dim):
+        return i4_sobol_generate(dim_num= dim, n=num)
+
+    @staticmethod
+    def generate_permutation_matrix(nrows, ncolumns):
+        matrix = np.zeros((nrows, ncolumns))
+        org_order = np.arange(nrows)
+        for i in range(ncolumns):
+            random.shuffle(org_order)
+            matrix[:, i] = org_order.T
+
+        return matrix
 
     @staticmethod
     def norm_rvs(numpts, stdev):

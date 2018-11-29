@@ -13,9 +13,7 @@ def compute_expectation_analytic(qgy):
     return ans
 
 
-def compute_expectation_mc(qgy):
-    num_sim = 1000
-    n_per_year = 100
+def compute_expectation_mc(qgy, num_sim, n_per_year):
     n = qgy.n
     sigma2 = []
     dt = 1 / n_per_year
@@ -27,11 +25,18 @@ def compute_expectation_mc(qgy):
     phi_Tk = gen_phi_vec_list(qgy)
     psi_Tk = gen_psi_matx_list(qgy)
 
+#try quasi monte carlo
+    permut_matrix = qgy.generate_permutation_matrix(num_sim, (n-1) * n_per_year)
+    sob_seq = qgy.generate_sobol_squence(num_sim, 3)
+######################
+
     np.random.seed(seed=12345)
     ans = np.zeros(n)
     for i in range(num_sim):
-        [x_n, x_y1] = qgy.generate_two_correlated_gauss(sigma_n, sigma2, qgy.rho_n_y1, (n-1) * n_per_year, 1/n_per_year)
-        x_y2 = qgy.generate_one_gauss(sigma2, (n-1) * n_per_year, 1/n_per_year)
+        #[x_n, x_y1] = qgy.generate_two_correlated_gauss(sigma_n, sigma2, qgy.rho_n_y1, (n-1) * n_per_year, 1/n_per_year)
+        #x_y2 = qgy.generate_one_gauss(sigma2, (n-1) * n_per_year, 1/n_per_year)
+        [x_n, x_y1] = qgy.generate_two_correlated_quasi_gauss(sigma_n, sigma2, qgy.rho_n_y1, dt, i, permut_matrix, sob_seq, [1, 2])
+        x_y2 = qgy.generate_one_quasi_gauss(sigma2, dt, i, permut_matrix, sob_seq, 0)
 
         x_Tk_y1 = np.concatenate([[0], x_y1[n_per_year-1::n_per_year]])
         x_Tk_y2 = np.concatenate([[0], x_y2[n_per_year-1::n_per_year]])
@@ -60,12 +65,28 @@ def gen_psi_matx_list(qgy):
         ans.append(qgy.psi_y(i))
     return ans
 
-qgy_md = qgy.QgyModel()
+def test_mc_analy_comparison():
+    qgy_md = qgy.QgyModel()
+    num_sim = 1000
+    n_per_year = 50
+    EtXT_analy = compute_expectation_analytic(qgy_md)
+    EtXT_mc = compute_expectation_mc(qgy_md, num_sim, n_per_year)
+    plt.plot(qgy_md.Tk, EtXT_analy, 'r--')
+    plt.plot(qgy_md.Tk, EtXT_mc, 'b-o')
+    plt.show()
 
-EtXT_analy = compute_expectation_analytic(qgy_md)
-EtXT_mc = compute_expectation_mc(qgy_md)
-plt.plot(qgy_md.Tk, EtXT_analy, 'r--')
-plt.plot(qgy_md.Tk, EtXT_mc, 'b-o')
-plt.show()
+def test_convergence():
+    qgy_md = qgy.QgyModel()
+    num_sim = 100
+    n_per_year = 100
+    EtXT_analy = compute_expectation_analytic(qgy_md)
+    for i in range(1, 10):
+        current_num = num_sim * i * 2
+        EtXT_mc = compute_expectation_mc(qgy_md, current_num, n_per_year)
+        RMSE = np.sqrt(np.sum((EtXT_analy - EtXT_mc)**2))
+        print("sim_num = ", current_num, "err = ", RMSE, "N * err = ", current_num * RMSE, "sqrt(N) * err = ", np.sqrt(current_num) * RMSE)
 
+
+if __name__ == "__main__":
+    test_mc_analy_comparison()
 
