@@ -1,11 +1,11 @@
-import QgyModel as qgy
+import Model.QgyModel as qgy
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 qgy = qgy.QgyModel()
 qgy.n_per_year = 10
-num_path = 5000
+num_path = 1000
 P_Tk = qgy.P_0T(qgy.Tk)
 
 Sigma_Tk_y = 0.045
@@ -13,8 +13,7 @@ v_Tk_y = 0.8
 rho_Tk_y = -0.5
 rho_t_ny1 = -0.1
 #R_Tk = np.array([0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]) * 0.01
-#R_Tk = np.array([0, 1, 2, 4, 8, 16, 32, 64, 128, 256]) * 0.01
-R_Tk = np.array([0, 1, 2]) * 0.01
+R_Tk = np.array([0, 1, 2, 4, 8, 16, 32, 64, 128, 256]) * 0.01
 count = 0
 for R in R_Tk:
     mc_res = np.zeros(len(qgy.Tk))

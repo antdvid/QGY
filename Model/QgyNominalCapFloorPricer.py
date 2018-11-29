@@ -1,4 +1,4 @@
-from QgyCapFloorPricer import *
+from Model.QgyCapFloorPricer import *
 import numpy as np
 import scipy as sp
 

@@ -1,5 +1,5 @@
-from QgIntegration import *
-from QgySwapPricer import *
+from Model.QgIntegration import *
+from Model.QgySwapPricer import *
 import numpy as np
 import scipy as sp
 

@@ -1,5 +1,5 @@
 import numpy as np
-from QgyModel import *
+from Model.QgyModel import *
 
 
 qgy = QgyModel()
@@ -7,6 +7,7 @@ qgy.generate_terms_structure()
 Tk = qgy.Tk
 num_iters = 1000
 strike = 0.05
+
 
 avg = np.zeros(len(Tk))
 for i in range(num_iters):

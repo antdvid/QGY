@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 class InflationData:
     @staticmethod
     def get_rpi_series(start_date, end_date):
-        fname = 'data/20180710 - RPI Data.xls'
+        fname = '../Data/20180710 - RPI Data.xls'
         df = pd.read_excel(fname)
         FORMAT = ['Month', 'RPI (Jan 1987=100)']
         data_selected = df[FORMAT]
@@ -17,9 +17,9 @@ class InflationData:
     @staticmethod
     def get_forward_inflation_rate(reference_date):
         if reference_date < pd.Timestamp(2015, 12, 1):
-            fname = 'data/GLC Inflation month end data_1979 to 15.xlsx'
+            fname = '../Data/GLC Inflation month end data_1979 to 15.xlsx'
         else:
-            fname = 'data/GLC Inflation month end data_2016 to present.xlsx'
+            fname = '../Data/GLC Inflation month end data_2016 to present.xlsx'
         df = pd.read_excel(fname, sheet_name='2. fwd curve', header=3, index_col=0)
         maturity = np.array(df.columns)
         data = np.array(df.loc[reference_date])

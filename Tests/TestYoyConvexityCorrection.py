@@ -1,4 +1,4 @@
-from QgyModel import *
+from Model.QgyModel import *
 
 qgy = QgyModel()
 ytT = qgy.price_yoy_infln_fwd()

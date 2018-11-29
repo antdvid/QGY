@@ -1,11 +1,10 @@
-from QgyModel import *
+from Model.QgyModel import *
 from scipy import stats
 import seaborn as sns
 
 qgy = QgyModel()
-qgy.sigma[0] = 1
 qgy.n_per_year = 5000
-sigma2 = np.repeat(qgy.sigma, qgy.n_per_year)
+sigma2 = np.repeat(1, qgy.n_per_year * qgy.n)
 sigma_n = np.repeat(1, qgy.n_per_year * qgy.n)
 t = np.linspace(0, qgy.Tk[-1], qgy.n_per_year * qgy.n)
 

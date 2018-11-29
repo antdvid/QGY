@@ -1,4 +1,4 @@
-from QgyModel import *
+from Model.QgyModel import *
 
 qgy = QgyModel()
 x1 = [-272797080.58203894] * 30

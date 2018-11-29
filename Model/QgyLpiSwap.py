@@ -1,4 +1,4 @@
-from QgyModel import *
+from Model.QgyModel import *
 
 
 class LpiSwapQgy(QgyModel):

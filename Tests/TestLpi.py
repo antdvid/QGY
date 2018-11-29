@@ -1,4 +1,4 @@
-from QgyLpiSwap import *
+from Model.QgyLpiSwap import *
 import scipy as scp
 import matplotlib.pyplot as plt
 

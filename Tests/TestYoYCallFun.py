@@ -1,5 +1,5 @@
 import numpy as np
-from QgyCapFloorPricer import *
+from Model.QgyCapFloorPricer import *
 
 
 qgy = QgyCapFloor()

@@ -1,5 +1,5 @@
 import numpy as np
-from QgySwapPricer import *
+from Model.QgySwapPricer import *
 import matplotlib.pyplot as plt
 
 

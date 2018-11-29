@@ -1,5 +1,5 @@
-from QgyVolSurface import *
-from QgyCapFloorPricer import *
+from Model.QgyVolSurface import *
+from Model.QgyCapFloorPricer import *
 from scipy.optimize import *
 
 def target_func(input):

@@ -1,4 +1,4 @@
-from QgyLpiSwap import *
+from Model.QgyLpiSwap import *
 import scipy.optimize as opt
 import time as time
 from scipy.signal import *

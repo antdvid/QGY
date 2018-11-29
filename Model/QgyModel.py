@@ -3,6 +3,7 @@ from scipy.stats import norm
 import scipy as sp
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
+from sobol_seq import *
 
 class QgyModel:
     def __init__(self):
@@ -423,8 +424,8 @@ class QgyModel:
     @staticmethod
     def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt):
         sqrt_dt = np.sqrt(dt)
-        dw1 = norm.rvs(size=n, scale=sqrt_dt)
-        dw2 = norm.rvs(size=n, scale=sqrt_dt)
+        dw1 = QgyModel.norm_rvs(n, sqrt_dt)
+        dw2 = QgyModel.norm_rvs(n, sqrt_dt)
 
         dx1 = dw1 * sigma1
         dx2 = dw1 * sigma2 * rho + dw2 * np.sqrt(1 - rho * rho) * sigma2
@@ -436,10 +437,17 @@ class QgyModel:
 
     @staticmethod
     def generate_one_gauss(sigma, n, dt):
-        dw = norm.rvs(size=n, scale=np.sqrt(dt))
+        dw = QgyModel.norm_rvs(n, np.sqrt(dt))
         dx = dw * sigma
         x = np.cumsum(dx, axis=-1)
         return x
+
+    @staticmethod
+    def norm_rvs(numpts, stdev):
+        ans = norm.rvs(size=numpts, scale=stdev) * QgyModel.rng_sign
+        return ans
+
+    rng_sign = 1
 
     @staticmethod
     def Yt_to_It(Yt):
@@ -457,7 +465,6 @@ class QgyModel:
     @staticmethod
     def Xt(xt, Phi, Psi):
         return np.exp(-Phi.T.dot(xt) - 0.5 * xt.T.dot(Psi.dot(xt)))
-
 
 if __name__ == "__main__":
     qgy = QgyModel()
