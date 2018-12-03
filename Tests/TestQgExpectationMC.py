@@ -16,16 +16,21 @@ def compute_expectation_analytic(qgy):
 def compute_expectation_mc(qgy, num_sim, n_per_year):
     n = qgy.n
     sigma2 = []
+    sigma2_prime = []
     dt = 1 / n_per_year
     for i in range(1, n):
         for j in range(n_per_year):
-            sigma2.append(np.exp(qgy.R_Tk_y[i] * (qgy.Tk[i - 1] + dt * (j + 1))))
+            t = qgy.Tk[i - 1] + dt * (j + 1)
+            sigma2.append(qgy.inf_vol(t))
+            sigma2_prime.append(qgy.inf_vol_prime(t))
+    sigma2_prime = None
     sigma_n = np.repeat(1, n_per_year * (n - 1))
+    sigma_n_prime = None#np.repeat(0, n_per_year * (n - 1))
 
     phi_Tk = gen_phi_vec_list(qgy)
     psi_Tk = gen_psi_matx_list(qgy)
 
-#try quasi monte carlo
+    #quasi monte carlo
     permut_matrix = qgy.generate_permutation_matrix(num_sim, (n-1) * n_per_year)
     sob_seq = qgy.generate_sobol_squence(num_sim, 3)
 ######################
@@ -33,10 +38,13 @@ def compute_expectation_mc(qgy, num_sim, n_per_year):
     np.random.seed(seed=12345)
     ans = np.zeros(n)
     for i in range(num_sim):
-        #[x_n, x_y1] = qgy.generate_two_correlated_gauss(sigma_n, sigma2, qgy.rho_n_y1, (n-1) * n_per_year, 1/n_per_year)
-        #x_y2 = qgy.generate_one_gauss(sigma2, (n-1) * n_per_year, 1/n_per_year)
-        [x_n, x_y1] = qgy.generate_two_correlated_quasi_gauss(sigma_n, sigma2, qgy.rho_n_y1, dt, i, permut_matrix, sob_seq, [1, 2])
-        x_y2 = qgy.generate_one_quasi_gauss(sigma2, dt, i, permut_matrix, sob_seq, 0)
+        # use pesudo random number
+        [x_n, x_y1] = qgy.generate_two_correlated_gauss(sigma_n, sigma2, qgy.rho_n_y1, (n-1) * n_per_year, 1/n_per_year, sigma_n_prime, sigma2_prime)
+        x_y2 = qgy.generate_one_gauss(sigma2, (n-1) * n_per_year, 1/n_per_year, sigma2_prime)
+
+        # use quasi random number
+        #[x_n, x_y1] = qgy.generate_two_correlated_quasi_gauss(sigma_n, sigma2, qgy.rho_n_y1, dt, i, permut_matrix, sob_seq, [1, 2])
+        #x_y2 = qgy.generate_one_quasi_gauss(sigma2, dt, i, permut_matrix, sob_seq, 0)
 
         x_Tk_y1 = np.concatenate([[0], x_y1[n_per_year-1::n_per_year]])
         x_Tk_y2 = np.concatenate([[0], x_y2[n_per_year-1::n_per_year]])
@@ -67,7 +75,7 @@ def gen_psi_matx_list(qgy):
 
 def test_mc_analy_comparison():
     qgy_md = qgy.QgyModel()
-    num_sim = 1000
+    num_sim = 10000
     n_per_year = 50
     EtXT_analy = compute_expectation_analytic(qgy_md)
     EtXT_mc = compute_expectation_mc(qgy_md, num_sim, n_per_year)

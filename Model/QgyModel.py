@@ -219,6 +219,16 @@ class QgyModel:
         self.D_t = P0t * np.exp(-self.phi_Tk_n1 * x_n_Tk - 0.5 * np.square(self.phi_Tk_n1) * self.Tk)
         self.D_t[0] = 1
 
+    def inf_vol(self, t):
+        for i in range(len(self.Tk)):
+            if self.Tk[i] >= t:
+                return np.exp(self.R_Tk_y[i] * t)
+
+    def inf_vol_prime(self, t):
+        for i in range(len(self.Tk)):
+            if self.Tk[i] >= t:
+                return self.R_Tk_y[i] * np.exp(self.R_Tk_y[i] * t)
+
     def P_0T(self, t):
         r = 0.002
         return np.exp(-r * t)
@@ -423,13 +433,22 @@ class QgyModel:
         return np.concatenate([[num], v])
 
     @staticmethod
-    def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt):
+    def generate_two_correlated_gauss(sigma1, sigma2, rho, n, dt, sigma1_prime=None, sigma2_prime=None):
         sqrt_dt = np.sqrt(dt)
-        dw1 = QgyModel.norm_rvs(n, sqrt_dt)
-        dw2 = QgyModel.norm_rvs(n, sqrt_dt)
+        dw1 = QgyModel.norm_rvs(n, 1)
+        dw2 = QgyModel.norm_rvs(n, 1)
 
-        dx1 = dw1 * sigma1
-        dx2 = dw1 * sigma2 * rho + dw2 * np.sqrt(1 - rho * rho) * sigma2
+        # created correlated increments
+        dw2 = rho * dw1 + np.sqrt(1 - rho * rho) * dw2
+
+        dx1 = sigma1 * sqrt_dt * dw1
+        dx2 = np.array(sigma2) * sqrt_dt * dw2
+
+        if sigma1_prime is not None:
+            dx1 += 0.5 * np.array(sigma1_prime) * np.power(dt, 1.5) * dw1
+
+        if sigma2_prime is not None:
+            dx2 += 0.5 * np.array(sigma2_prime) * np.power(dt, 1.5) * dw2
 
         x1 = np.cumsum(dx1, axis=-1)
         x2 = np.cumsum(dx2, axis=-1)
@@ -437,9 +456,11 @@ class QgyModel:
         return [x1, x2]
 
     @staticmethod
-    def generate_one_gauss(sigma, n, dt):
-        dw = QgyModel.norm_rvs(n, np.sqrt(dt))
-        dx = dw * sigma
+    def generate_one_gauss(sigma, n, dt, sigma_prime=None):
+        dw = QgyModel.norm_rvs(n, 1)
+        dx = dw * sigma * np.sqrt(dt)
+        if sigma_prime is not None:
+            dx += 0.5 * np.array(sigma_prime) * np.power(dt, 1.5) * dw
         x = np.cumsum(dx, axis=-1)
         return x
 

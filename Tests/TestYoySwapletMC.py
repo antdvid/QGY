@@ -4,8 +4,8 @@ import numpy as np
 
 
 qgy = qgy.QgyModel()
-qgy.n_per_year = 10
-num_path = 1000
+qgy.n_per_year = 50
+num_path = 10000
 P_Tk = qgy.P_0T(qgy.Tk)
 
 Sigma_Tk_y = 0.045
